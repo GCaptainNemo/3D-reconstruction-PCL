@@ -11,6 +11,7 @@
 
 #include "io_obj.h"
 #include "utils.h"
+#include "pc_operator.h"
 #include <opencv2/opencv.hpp>
 
 
@@ -19,6 +20,8 @@ ioOBJ::ioOBJ()
 {
 	this->points_xyzi = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>);
 	this->points_xyzrgb = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+	this->points_xyz = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+
 }
 
 ioOBJ::~ioOBJ() {
@@ -195,7 +198,7 @@ void ioOBJ::read_image(const char * filename)
 	*/
 }
 
-void ioOBJ::read_bin_xyzrgb(const std::string &filename)
+void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
 {
 	fstream input(filename.c_str(), ios::in | ios::binary);
 	if (!input.good())
@@ -204,23 +207,75 @@ void ioOBJ::read_bin_xyzrgb(const std::string &filename)
 		exit(EXIT_FAILURE);
 	}
 	input.seekg(0, ios::beg);
+	this->points_xyz->clear();
+	if (!iscrop)
+	{
+		for (int i = 0; input.good() && !input.eof(); i++)
+		{
+			pcl::PointXYZ point;
+			//pcl::PointXYZRGB point;
+			float _itensity; // useless
+			input.read((char *)&point.x, 3 * sizeof(float));
+			input.read((char *)&_itensity, sizeof(float));
+			this->points_xyz->push_back(point);
+		}
+	}
+	else 
+	{
+		// 根据transform-matrix裁剪一部分
+		int row_bound = this->image.rows;
+		int column_bound = this->image.cols;
+		std::cout << "row_bound = " << row_bound << "\n column_bound = " << column_bound;
+		std::cout << "transform_matrix = \n";
+		
+		for (int i = 0; input.good() && !input.eof(); i++)
+		{
+			pcl::PointXYZ point;
+			float _itensity;
+			input.read((char *)&point.x, 3 * sizeof(float));
+			input.read((char *)&_itensity, sizeof(float));
+			double a_[4] = { point.x, point.y, point.z, 1.0 };
+			cv::Mat pos(4, 1, CV_64F, a_);
+			cv::Mat newpos(this->transform_matrix * pos);
+			float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
+			float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
+			if (point.x >= 0)
+			{
+				if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
+				{
+
+					this->points_xyz->push_back(point);
+				}
+			}
+		}	
+	}
+	input.close();
+}
+
+
+
+
+void ioOBJ::project_get_rgb() {
+	int size = this->points_xyz->size();
 	int row_bound = this->image.rows;
 	int column_bound = this->image.cols;
 	std::cout << "row_bound = " << row_bound << "\n column_bound = " << column_bound;
 	std::cout << "transform_matrix = \n";
-	for (int i = 0; input.good() && !input.eof(); i++)
+	for (int i = 0; i < size; i++)
 	{
-		pcl::PointXYZRGB point;
-		float _itensity; // useless
-		input.read((char *)&point.x, 3 * sizeof(float));
-		input.read((char *)&_itensity, sizeof(float));
-		
+		pcl::PointXYZRGB pointRGB;
+		pcl::PointXYZ point = this->points_xyz->points[i];
+
+		pointRGB.x = point.x;
+		pointRGB.y = point.y;
+		pointRGB.z = point.z;
+
 		double a_[4] = { point.x, point.y, point.z, 1.0 };
 		cv::Mat pos(4, 1, CV_64F, a_);
 		cv::Mat newpos(this->transform_matrix * pos);
 		float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
 		float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
-		
+
 		if (point.x >= 0)
 		{
 			if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
@@ -228,18 +283,14 @@ void ioOBJ::read_bin_xyzrgb(const std::string &filename)
 				//  imread是BGR（BITMAP）
 				int row = int(y);
 				int column = int(x);
-
-				point.r = this->image.at<cv::Vec3b>(row, column)[2];  
-				point.g = this->image.at<cv::Vec3b>(row, column)[1];
-				point.b = this->image.at<cv::Vec3b>(row, column)[0];
-				this->points_xyzrgb->push_back(point);
+				pointRGB.r = this->image.at<cv::Vec3b>(row, column)[2];
+				pointRGB.g = this->image.at<cv::Vec3b>(row, column)[1];
+				pointRGB.b = this->image.at<cv::Vec3b>(row, column)[0];
+				this->points_xyzrgb->push_back(pointRGB);
 			}
 		}
 	}
-	input.close();
-
-}
-
+};
 
 void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
 {

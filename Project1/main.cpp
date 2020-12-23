@@ -6,24 +6,20 @@
 #include <pcl/point_types.h> //PCL对各种格式的点的支持头文件
 #include <pcl/visualization/cloud_viewer.h>//点云查看窗口头文件
 #include "io_obj.h"
-
 #include <iostream>
 #include <string>
 using namespace pcl;
 
 
-	
-
 
 int main()
 {
 	ioOBJ io_obj;
-	
 	io_obj.read_image("../resources/image/000000.png");
 	io_obj.read_calib("../resources/calib/000000.txt");
 	//io_obj.read_bin_xyzi("../resources/Lidar/000006.bin", true);
-	io_obj.read_bin_xyzrgb("../resources/Lidar/000000.bin");
-
+	io_obj.read_bin_xyz("../resources/Lidar/000000.bin", true);
+	io_obj.project_get_rgb();
 	pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");//直接创造一个显示窗口
 	//viewer.showCloud(io_obj.points_xyzi);
 	viewer.showCloud(io_obj.points_xyzrgb);
@@ -31,7 +27,6 @@ int main()
 	while (!viewer.wasStopped())
 	{
 	}
-	
 	return 0;
 }
 

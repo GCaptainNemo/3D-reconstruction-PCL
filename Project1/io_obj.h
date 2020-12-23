@@ -18,8 +18,9 @@ public:
 public:
 	void bin2pcd(const char *filenameInput, const char *filenameOutput);   
 	void bin2pcd2(const std::string & infile, const std::string & outfile);
-	void read_bin_xyzi(const std::string & filename, bool crop);
-	void read_bin_xyzrgb(const std::string &filename);
+	void read_bin_xyzi(const std::string & filename, bool iscrop);
+	void read_bin_xyz(const std::string &filename, bool iscrop);
+	void project_get_rgb();
 	void read_calib(const char *filename);
 	void read_pointcloud(const char *filename);
 	void read_image(const char *filename);
@@ -27,7 +28,9 @@ public:
 
 public:
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points_xyzi;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr points_xyz;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb;
+
 
 
 public:

@@ -10,8 +10,9 @@
 class pc_operator
 {
 public:
-	void statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter);
+	// 
+	static void statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter, int neighbour, float proportion);
 	
 
 

@@ -8,11 +8,9 @@
 #include <vector> 
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
-
+#include <opencv2/opencv.hpp>
 #include "io_obj.h"
 #include "utils.h"
-#include "pc_operator.h"
-#include <opencv2/opencv.hpp>
 
 
 
@@ -129,7 +127,6 @@ void ioOBJ::read_calib(const char * filename)
 	double p2_vector_double[3][4];
 	for (int i = 1; i < p2_vector.size(); i++)
 	{
-		std::cout << stod(p2_vector[i]) << "\n";
 		p2_vector_double[(i - 1) / 4][(i - 1) % 4] = stod(p2_vector[i]);
 	}
 	cv::Mat P2_matrix(3, 4, CV_64F, p2_vector_double);
@@ -141,7 +138,6 @@ void ioOBJ::read_calib(const char * filename)
 	double r0_vector_double[3][3];
 	for (int i = 1; i < r0_vector.size(); i++)
 	{
-		std::cout << stod(r0_vector[i]) << "\n";
 		r0_vector_double[(i - 1) / 3][(i - 1) % 3] = stod(r0_vector[i]);
 	}
 	cv::Mat r0_matrix(3, 3, CV_64F, r0_vector_double);
@@ -151,15 +147,7 @@ void ioOBJ::read_calib(const char * filename)
 	cv::Mat zeros(3, 1, CV_64F, _b);
 	cv::hconcat(r0_matrix, zeros, r0_matrix);
 	cv::vconcat(r0_matrix, ones, r0_matrix);
-	std::cout << "r0_matrix = \n";
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			std::cout << r0_matrix.at<double>(i, j) << "     ";
-		}
-		std::cout << "\n";
-	}
 	
-
 
 	// /////////////////////////////////////////////////////////////////////////
 	// Tr matrix
@@ -180,9 +168,7 @@ void ioOBJ::read_calib(const char * filename)
 	// Transform matrix
 	// ////////////////////////////////////////////////////////////////////////////////
 	this->transform_matrix = cv::Mat(P2_matrix * r0_matrix * Tr_matrix).clone();
-	std::cout << "rows = " << this->transform_matrix.rows << "\n";
-	std::cout << "columns = " << this->transform_matrix.cols << "\n";
-
+	
 }
 
 
@@ -225,9 +211,6 @@ void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
 		// 根据transform-matrix裁剪一部分
 		int row_bound = this->image.rows;
 		int column_bound = this->image.cols;
-		std::cout << "row_bound = " << row_bound << "\n column_bound = " << column_bound;
-		std::cout << "transform_matrix = \n";
-		
 		for (int i = 0; input.good() && !input.eof(); i++)
 		{
 			pcl::PointXYZ point;
@@ -259,8 +242,6 @@ void ioOBJ::project_get_rgb() {
 	int size = this->points_xyz->size();
 	int row_bound = this->image.rows;
 	int column_bound = this->image.cols;
-	std::cout << "row_bound = " << row_bound << "\n column_bound = " << column_bound;
-	std::cout << "transform_matrix = \n";
 	for (int i = 0; i < size; i++)
 	{
 		pcl::PointXYZRGB pointRGB;
@@ -317,8 +298,7 @@ void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
 		// 根据transform-matrix裁剪一部分
 		int row_bound = this->image.rows;
 		int column_bound = this->image.cols;
-		std::cout << "row_bound = " << row_bound << "\n column_bound = " << column_bound;
-		std::cout << "transform_matrix = \n";
+		
 		for (int i = 0; input.good() && !input.eof(); i++)
 		{
 			pcl::PointXYZI point;
@@ -345,36 +325,21 @@ void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
 }
 
 
-
-
-
 void read_pcd(const std::string &  pcd_path)
 {
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_path, *cloud) == -1) {
-		std::cout << "Couldn't read file rabbit.pcd" << "\n";
-		//return(-1);
-	}
-	std::cout << cloud->points.size() << std::endl;
-	//可视化
-	pcl::visualization::CloudViewer viewer("cloud viewer");
-	viewer.showCloud(cloud);
-	//viewer.runOnVisualizationThreadOnce(viewerOneOff);
-	system("pause");
+		std::cout << "Couldn't read file" << "\n";
+	}	
 }
 
 void read_pcd_file(std::string pcd_path, pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
 {
-
-	//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_path, *cloud) == -1)
 	{
 		std::cout << "Couldn't read file " << pcd_path << "\n";
-		//PCL_ERROR("Couldn't read file rabbit.pcd\n");
-		//return(-1);
 	}
-	std::cout << cloud->points.size() << std::endl;
 }
 
 

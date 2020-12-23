@@ -19,14 +19,14 @@ int main()
 {
 	ioOBJ io_obj;
 	
-	io_obj.read_image("../resources/image/000006.png");
-	io_obj.read_calib("../resources/calib/000006.txt");
-	io_obj.read_bin_xyzi("../resources/Lidar/000006.bin", true);
-	//io_obj.read_bin_xyzrgb("../resources/Lidar/000006.bin");
+	io_obj.read_image("../resources/image/000000.png");
+	io_obj.read_calib("../resources/calib/000000.txt");
+	//io_obj.read_bin_xyzi("../resources/Lidar/000006.bin", true);
+	io_obj.read_bin_xyzrgb("../resources/Lidar/000000.bin");
 
 	pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");//直接创造一个显示窗口
-	viewer.showCloud(io_obj.points_xyzi);
-	//viewer.showCloud(io_obj.points_xyzrgb);
+	//viewer.showCloud(io_obj.points_xyzi);
+	viewer.showCloud(io_obj.points_xyzrgb);
 
 	while (!viewer.wasStopped())
 	{

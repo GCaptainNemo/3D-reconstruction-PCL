@@ -211,22 +211,27 @@ void ioOBJ::read_bin_xyzrgb(const std::string &filename)
 	for (int i = 0; input.good() && !input.eof(); i++)
 	{
 		pcl::PointXYZRGB point;
+		float _itensity; // useless
 		input.read((char *)&point.x, 3 * sizeof(float));
+		input.read((char *)&_itensity, sizeof(float));
 		
 		double a_[4] = { point.x, point.y, point.z, 1.0 };
 		cv::Mat pos(4, 1, CV_64F, a_);
 		cv::Mat newpos(this->transform_matrix * pos);
-		int x = (int)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
-		int y = (int)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
+		float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
+		float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
 		
 		if (point.x >= 0)
 		{
 			if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
 			{
 				//  imreadÊÇBGR£¨BITMAP£©
-				point.r = this->image.at<cv::Vec3b>(y, x)[2];  
-				point.g = this->image.at<cv::Vec3b>(y, x)[1];
-				point.b = this->image.at<cv::Vec3b>(y, x)[0];
+				int row = int(y);
+				int column = int(x);
+
+				point.r = this->image.at<cv::Vec3b>(row, column)[2];  
+				point.g = this->image.at<cv::Vec3b>(row, column)[1];
+				point.b = this->image.at<cv::Vec3b>(row, column)[0];
 				this->points_xyzrgb->push_back(point);
 			}
 		}

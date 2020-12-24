@@ -9,7 +9,7 @@
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
 #include <opencv2/opencv.hpp>
-#include "io_obj.h"
+#include "kitti_io_obj.h"
 #include "utils.h"
 
 
@@ -236,21 +236,18 @@ void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
 }
 
 
-
-
 void ioOBJ::project_get_rgb() {
 	int size = this->points_xyz->size();
 	int row_bound = this->image.rows;
 	int column_bound = this->image.cols;
+	this->points_xyzrgb->clear();
 	for (int i = 0; i < size; i++)
 	{
 		pcl::PointXYZRGB pointRGB;
 		pcl::PointXYZ point = this->points_xyz->points[i];
-
 		pointRGB.x = point.x;
 		pointRGB.y = point.y;
 		pointRGB.z = point.z;
-
 		double a_[4] = { point.x, point.y, point.z, 1.0 };
 		cv::Mat pos(4, 1, CV_64F, a_);
 		cv::Mat newpos(this->transform_matrix * pos);
@@ -283,6 +280,7 @@ void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
 		exit(EXIT_FAILURE);
 	}
 	input.seekg(0, ios::beg);
+	this->points_xyzi->clear();
 	if (!crop)
 	{	
 		for (int i = 0; input.good() && !input.eof(); i++)

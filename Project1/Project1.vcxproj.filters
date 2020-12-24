@@ -18,17 +18,17 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="io_obj.h">
-      <Filter>头文件</Filter>
-    </ClCompile>
-    <ClCompile Include="io_obj.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pc_operator.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="kitti_io_obj.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="kitti_io_obj.h">
+      <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

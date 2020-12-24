@@ -1,8 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <pcl/visualization/cloud_viewer.h>
-#include <iostream>//标准C++库中的输入输出类相关头文件。
-#include <pcl/point_types.h> //PCL中支持的点类型头文件。
-#include <boost/random.hpp>  //高斯噪点测试
+#include <iostream>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h> 
+#include <boost/random.hpp>  
 #include <fstream>  
 #include <string>  
 #include <vector> 
@@ -29,7 +30,7 @@ ioOBJ::~ioOBJ() {
 void ioOBJ::bin2pcd2(const std::string & infile, const std::string & outfile)
 {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points(new pcl::PointCloud<pcl::PointXYZI>);
-
+	
 	fstream input(infile.c_str(), ios::in | ios::binary);
 	if (!input.good())
 	{
@@ -237,10 +238,13 @@ void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
 
 
 void ioOBJ::project_get_rgb() {
+	
 	int size = this->points_xyz->size();
 	int row_bound = this->image.rows;
 	int column_bound = this->image.cols;
 	this->points_xyzrgb->clear();
+	pcl::PointCloud<pcl::PointXYZ>::Ptr linshi_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+	linshi_xyz->clear();
 	for (int i = 0; i < size; i++)
 	{
 		pcl::PointXYZRGB pointRGB;
@@ -265,9 +269,12 @@ void ioOBJ::project_get_rgb() {
 				pointRGB.g = this->image.at<cv::Vec3b>(row, column)[1];
 				pointRGB.b = this->image.at<cv::Vec3b>(row, column)[0];
 				this->points_xyzrgb->push_back(pointRGB);
+				linshi_xyz->push_back(point);
 			}
 		}
 	}
+	pcl::copyPointCloud(*linshi_xyz, *(this->points_xyz));
+	std::cout << "after_projected_get_rgb = " << this->points_xyz->size();
 };
 
 void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)

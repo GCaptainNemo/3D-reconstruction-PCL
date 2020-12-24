@@ -27,6 +27,13 @@ public:
 	static void resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed, const float &searchRadius);
 
+	static void upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_upsampled);
+	
+	static void random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number);
+
+
 	static void estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 		pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints);
 
@@ -40,6 +47,8 @@ public:
 		pcl::PolygonMesh &mesh);
 
 	static void color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+
+
 
 	/*pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
 	pcl::PointCloud<PointT>::Ptr cloud_downSampled(new pcl::PointCloud<PointT>);

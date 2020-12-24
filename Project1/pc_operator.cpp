@@ -4,6 +4,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/random_sample.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/surface/mls.h>
 #include <pcl/features/normal_3d.h>
@@ -20,9 +21,59 @@ void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	downSampled.setInputCloud(cloud);            //设置需要过滤的点云给滤波对象
 	downSampled.setLeafSize(voxel_size, voxel_size, voxel_size);  //设置滤波时创建的体素体积为1cm的立方体
 	downSampled.filter(*cloud_downSampled);           //执行滤波处理，存储输出
+	std::cout << "downsampled point cloud = " << cloud_downSampled->size() << std::endl;
 }
 
 
+void pc_operator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_upsampled) 
+{
+	pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ> filter;
+	filter.setInputCloud(cloud);
+	std::cout << "before filter pc = " << cloud->size() << std::endl;
+	pcl::PointCloud<pcl::PointXYZ> filteredCloud;    //输出MLS
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree;
+	filter.setSearchMethod(kdtree);
+	filter.setSearchRadius(5);
+	filter.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ>::SAMPLE_LOCAL_PLANE);
+	filter.setUpsamplingRadius(0.05);
+	filter.setUpsamplingStepSize(0.01);
+	filter.process(filteredCloud);
+	std::cout << "upsampled point cloud = " << filteredCloud.size() << std::endl;
+	cloud_upsampled = filteredCloud.makeShared();
+
+}
+
+
+void pc_operator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number) 
+{
+	
+	pcl::RandomSample<pcl::PointXYZ> rs;
+	rs.setInputCloud(cloud);	    	// 设置输出点的数量   
+	rs.setSample(number);
+	rs.filter(*cloud_randomsampled);  // 下采样并输出到cloud_out
+	std::cout << "cloud_randomsampled = " << cloud_randomsampled->size() << std::endl;
+
+}
+
+void pc_operator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed, const float &searchRadius)
+{
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr treeSampling(new pcl::search::KdTree<pcl::PointXYZ>);// 创建用于最近邻搜索的KD-Tree
+	pcl::PointCloud<pcl::PointXYZ> mls_point;    //输出MLS
+	pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ> mls; // 定义最小二乘实现的对象mls
+	mls.setComputeNormals(true);               // 最小二乘计算中是否计算法线
+	mls.setInputCloud(cloud);                  // 设置待处理点云
+	// mls.setPolynomialOrder(2);              // 拟合2阶多项式拟合
+	mls.setPolynomialFit(true);                // 设置为false可以 加速 smooth
+	mls.setSearchMethod(treeSampling);         // 设置KD-Tree作为搜索方法
+	mls.setSearchRadius(searchRadius);           // 单位m.设置用于拟合的K近邻半径
+	mls.process(mls_point);                 //输出
+	// 输出重采样结果
+	cloud_smoothed = mls_point.makeShared();
+	std::cout << "cloud_smoothed(resampled) =  " << cloud_smoothed->size() << std::endl;
+}
 void pc_operator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter,
 	const int & neighbour, const float & proportion)
 {
@@ -31,27 +82,11 @@ void pc_operator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
 	sor.setMeanK(neighbour);   // 邻居数
 	sor.setStddevMulThresh(proportion); // thresh = mean + proportion * std
 	sor.filter(*cloud_filter);
-	std::cout << "cloud_filter: " << cloud_filter->size() << std::endl;
+	std::cout << "statistical filtered point: " << cloud_filter->size() << std::endl;
 }
 
 
-void pc_operator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed, const float &searchRadius)
-{
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr treeSampling(new pcl::search::KdTree<pcl::PointXYZ>);// 创建用于最近邻搜索的KD-Tree
-	pcl::PointCloud<pcl::PointXYZ> mls_point;    //输出MLS
-	pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ> mls; // 定义最小二乘实现的对象mls
-	mls.setComputeNormals(false);  //设置在最小二乘计算中是否需要存储计算的法线
-	mls.setInputCloud(cloud);         //设置待处理点云
-	mls.setPolynomialOrder(2);            // 拟合2阶多项式拟合
-	mls.setPolynomialFit(false);     // 设置为false可以 加速 smooth
-	mls.setSearchMethod(treeSampling);         // 设置KD-Tree作为搜索方法
-	mls.setSearchRadius(searchRadius);           // 单位m.设置用于拟合的K近邻半径
-	mls.process(mls_point);                 //输出
-	// 输出重采样结果
-	cloud_smoothed = mls_point.makeShared();
-	std::cout << "cloud_smoothed: " << cloud_smoothed->size() << std::endl;
-}
+
 
 void pc_operator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints) 

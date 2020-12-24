@@ -20,10 +20,12 @@ int main()
 
 	
 	// 点云预处理
-	pc_operator::down_sample(io_obj.points_xyz, io_obj.points_xyz, 0.1);
-	pc_operator::statistical_filter(io_obj.points_xyz, io_obj.points_xyz, 50, 3.0);
+	//pc_operator::down_sample(io_obj.points_xyz, io_obj.points_xyz, 0.01);
+	//pc_operator::statistical_filter(io_obj.points_xyz, io_obj.points_xyz, 50, 3.0);
 	//pcl::io::savePCDFile("/pcd", *cloud);
-	pc_operator::resampling(io_obj.points_xyz, io_obj.points_xyz, 0.05);
+	// pc_operator::resampling(io_obj.points_xyz, io_obj.points_xyz, 0.05); // 平滑
+	pc_operator::upsampling(io_obj.points_xyz, io_obj.points_xyz);
+	// pc_operator::random_sampling(io_obj.points_xyz, io_obj.points_xyz, 60000);
 	//// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	

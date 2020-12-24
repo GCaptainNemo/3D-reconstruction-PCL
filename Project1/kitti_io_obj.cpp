@@ -157,7 +157,6 @@ void ioOBJ::read_calib(const char * filename)
 	double Tr_vector_double[3][4];
 	for (int i = 1; i < Tr_vector.size(); i++)
 	{
-		std::cout << stod(Tr_vector[i]) << "\n";
 		Tr_vector_double[(i - 1) / 4][(i - 1) % 4] = stod(Tr_vector[i]);
 	}
 	cv::Mat Tr_matrix(3, 4, CV_64F, Tr_vector_double);
@@ -314,8 +313,6 @@ void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
 			cv::Mat newpos(this->transform_matrix * pos);
 			float x = (float) (newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
 			float y = (float) (newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
-			
-			
 			if(point.x >= 0)
 			{
 				if (x >= 0 && x < column_bound && y >= 0 && y < row_bound) 

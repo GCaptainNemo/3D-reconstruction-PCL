@@ -24,17 +24,17 @@ int main()
 	//pc_operator::statistical_filter(io_obj.points_xyz, io_obj.points_xyz, 50, 3.0);
 	//pcl::io::savePCDFile("/pcd", *cloud);
 	// pc_operator::resampling(io_obj.points_xyz, io_obj.points_xyz, 0.05); // 平滑
-	pc_operator::upsampling(io_obj.points_xyz, io_obj.points_xyz);
+	// pc_operator::upsampling(io_obj.points_xyz, io_obj.points_xyz);
 	// pc_operator::random_sampling(io_obj.points_xyz, io_obj.points_xyz, 60000);
 	//// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	
 	// 网格化
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	io_obj.project_get_rgb();
 	pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>); // 定义输出的点云法线
 	pc_operator::estimate_normal(io_obj.points_xyz, normals, 10);
-	io_obj.project_get_rgb();
-	
 	
 	//pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");//直接创造一个显示窗口
 	////viewer.showCloud(io_obj.points_xyzi);

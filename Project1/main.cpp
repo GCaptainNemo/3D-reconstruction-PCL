@@ -47,9 +47,9 @@ int main()
 	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 	pcl::concatenateFields(*(io_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 	pcl::PolygonMesh mesh; 
-	pc_operator::triangular(rgbcloud_with_normals, mesh);
-	//pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);
-	//pc_operator::color_mesh(mesh, io_obj.points_xyzrgb, "./123.ply");
+	//pc_operator::triangular(rgbcloud_with_normals, mesh);
+	pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);
+	//pc_operator::color_mesh(mesh, io_obj.points_xyzrgb);
 	// 显示网格化结果
  	
 
@@ -57,6 +57,7 @@ int main()
 	viewer->setBackgroundColor(0, 0, 0);
 	viewer->addPolygonMesh(mesh, "mesh");
 	viewer->initCameraParameters();
+	viewer->addCoordinateSystem();
 	while (!viewer->wasStopped()) {
 		viewer->spinOnce(100);
 		boost::this_thread::sleep(boost::posix_time::microseconds(100000));

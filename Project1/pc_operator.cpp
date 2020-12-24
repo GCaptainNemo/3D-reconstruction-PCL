@@ -224,7 +224,7 @@ void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXY
 				dist += 1.0 / pointNKNSquaredDistance[j];		
 			}
 		}
-		cloud_color_mesh.points[i].r = int(red / pointIdxNKNSearch.size() + 0.5);
+		cloud_color_mesh.points[i].r = int(red / pointIdxNKNSearch.size() + 0.5);   // PCL 版本1.9之前用float表示颜色，1.9之后用int
 		cloud_color_mesh.points[i].g = int(green / pointIdxNKNSearch.size() + 0.5);
 		cloud_color_mesh.points[i].b = int(blue / pointIdxNKNSearch.size() + 0.5);
 

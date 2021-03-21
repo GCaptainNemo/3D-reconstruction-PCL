@@ -30,7 +30,7 @@
     <ClCompile Include="kitti_io_obj.h">
       <Filter>头文件</Filter>
     </ClCompile>
-    <ClCompile Include="lvx_reader.cpp">
+    <ClCompile Include="lvx_io_obj.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,7 +41,7 @@
     <ClInclude Include="pc_operator.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lvx_reader.h">
+    <ClInclude Include="lvx_io_obj.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

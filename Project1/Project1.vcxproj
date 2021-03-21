@@ -143,13 +143,13 @@
   <ItemGroup>
     <ClCompile Include="kitti_io_obj.cpp" />
     <ClCompile Include="kitti_io_obj.h" />
-    <ClCompile Include="lvx_reader.cpp" />
+    <ClCompile Include="lvx_io_obj.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pc_operator.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lvx_reader.h" />
+    <ClInclude Include="lvx_io_obj.h" />
     <ClInclude Include="pc_operator.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

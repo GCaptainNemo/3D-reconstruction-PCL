@@ -175,9 +175,7 @@ void ioOBJ::read_calib(const char * filename)
 
 void ioOBJ::read_image(const char * filename)
 {
-	
 	this->image = cv::imread(filename).clone();
-
 	/*cv::namedWindow("≤‚ ‘opencv");
 	cv::imshow("≤‚ ‘opencv", img);
 	cv::waitKey(6000);

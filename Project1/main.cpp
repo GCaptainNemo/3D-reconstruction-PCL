@@ -7,9 +7,6 @@
 #include <iostream>
 #include <string>
 
-//#include <Python.h>
-
-
 using namespace pcl;
 
 void dealwith_kitti(const bool &preprocess, const std::string & option) 
@@ -73,8 +70,9 @@ void dealwith_kitti(const bool &preprocess, const std::string & option)
 
 int main()
 {
-	// dealwith_kitti(0, "pc");
-	//dealwith_lvx("topcd");
+	// dealwith_kitti(false, "pc");
+	//const char * filedir = "../resources/livox_hikvision/test.lvx";
+	//dealwith_lvx(filedir, "topcd");
 	bool show = true;
 	openPCDfile("./output/test.pcd", show);
 	return 0;

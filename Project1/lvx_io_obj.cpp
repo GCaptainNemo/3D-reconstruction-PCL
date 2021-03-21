@@ -5,9 +5,10 @@
 #include <pcl/io/pcd_io.h>//pcd 读写类相关的头文件。
 
 
-void dealwith_lvx(const std::string & option)
+void dealwith_lvx(const char *filedir, const char *option)
 {
-	if (option == "topcd") {
+	if (strcmp(option, "topcd") == 0) 
+	{
 		std::cout << "hello world\n";
 		Py_Initialize();   //初始化
 		if (!Py_IsInitialized()) {
@@ -33,19 +34,21 @@ void dealwith_lvx(const std::string & option)
 
 		PyObject *pArgs = PyTuple_New(2);
 		// 把test.lvx按帧输出pcd形式，在output文件夹中
-		PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", "../resources/test.lvx")); // s代表创建python中str变量
+		PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", filedir)); // s代表创建python中str变量
 		PyTuple_SetItem(pArgs, 1, Py_BuildValue("s", "output"));
 		PyEval_CallObject(pFunc, pArgs);		//调用函数
 
-		//第六步：清空PyObject 
+		// 清空PyObject 
 		Py_DECREF(pModule);
 		Py_DECREF(pFunc);
 		Py_DECREF(pArgs);
 		Py_Finalize();
 	}
+	std::cout << "123\n";
 }
 
-void openPCDfile(const std::string &file_dir, const bool &show)
+//void openPCDfile(const std::string &file_dir, const bool &show)
+void openPCDfile(const char * file_dir, const bool &show)
 {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZI>(file_dir, *cloud) == -1) {

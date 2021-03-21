@@ -30,12 +30,18 @@
     <ClCompile Include="kitti_io_obj.h">
       <Filter>头文件</Filter>
     </ClCompile>
+    <ClCompile Include="lvx_reader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pc_operator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lvx_reader.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

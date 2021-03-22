@@ -29,5 +29,11 @@ VS2017 + PCL1.8.1
 
 ![image](./result/greedy_tri.png)
 
+### 3. 真彩色点云(lvx-一帧6000点)
+
+![image](./result/lvx_rgb_pc.jpg)
+
+
+
 ## 五、参考
 [1] 解析.lvx文件代码参考[pylvx](https://github.com/Jaesirky/pylvx)

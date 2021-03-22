@@ -134,7 +134,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "greedy");
+	dealwith_lvx(true, "greedy");
 	return 0;
 }
 

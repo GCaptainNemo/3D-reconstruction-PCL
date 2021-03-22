@@ -4,6 +4,7 @@
 #include <iostream>
 #include <Python.h>
 #include <pcl/io/pcd_io.h>//pcd 读写类相关的头文件。
+#include <io.h>
 
 
 LvxObj::LvxObj()
@@ -12,12 +13,6 @@ LvxObj::LvxObj()
 	this->points_xyzrgb = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 	this->points_xyz = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 }
-
-LvxObj::~LvxObj() 
-{
-}
-
-
 
 void LvxObj::lvx2pcd(const char *filedir, const char *option)
 {
@@ -95,12 +90,10 @@ void LvxObj::set_calib()
 		-5.6030465241367899e-03, -9.9995961043041048e-01,
 		-7.0273307528522788e-03, 6.9595232605934143e-02, 
 		0., 0., 0., 1. };
-
 	cv::Mat ext_(4, 4, CV_64F, Extrin_matrix);
 	cv::Mat invRt = ext_(cv::Rect(0, 0, 3, 3));                       // Camera extrinsic rotation matrix (Invert from world extrinsic).
 	cv::Mat R = invRt.t();
 	cv::Mat invT = -R * ext_(cv::Rect(3, 0, 1, 3)); // Camera extrinsic translate matrix (Invert from world extrinsic).
-
 	//cv::Mat R = 
 	double Intrinsic[3][3] = { 1.6634617699999999e+03, 0., 9.7235897999999997e+02, 0.,
 	   1.6652231500000000e+03, 5.1716867000000002e+02, 0., 0., 1. };
@@ -161,7 +154,6 @@ void LvxObj::project_get_rgb() {
 
 void LvxObj::read_pcd_xyz(const char * filename, const bool &iscrop)
 {
-	// c_str()转换成char *
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *cloud) == -1) {
 		std::cout << "Couldn't read file" << "\n";
@@ -199,5 +191,73 @@ void LvxObj::read_pcd_xyz(const char * filename, const bool &iscrop)
 	}
 }
 
+void LvxObj::read_pcds_xyz(const std::string & dir, const bool &iscrop, const int & frame_num)
+{
+	intptr_t handle;  // 为了跨平台适应intptr_t
+	struct _finddata_t fileinfo;
+	//第一次查找
+	std::string p;
+	handle = _findfirst(p.append(dir).append("/*.pcd").c_str(), &fileinfo);
+	if (handle == -1){ 
+		return; 
+		std::cout << "handle == -1" << std::endl;
+	}
+		
+	std::vector<std::string> files;
+	
+	do
+	{
+		//找到的文件的文件名
+		printf("%s\n", fileinfo.name);
+		files.push_back(p.assign(dir).append("/").append(fileinfo.name));
+	} while (!_findnext(handle, &fileinfo));
+	_findclose(handle);
 
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
+	for (int frame = 0; frame < frame_num; frame++) 
+	{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_frame(new pcl::PointCloud<pcl::PointXYZ>);
+		if (pcl::io::loadPCDFile<pcl::PointXYZ>(files[frame].c_str(), *cloud_frame) == -1) {
+			std::cout << "Couldn't read file" << "\n";
+		}
+		else {
+			*cloud += *cloud_frame;
+		}
+	}
+	std::cout << "cloud-size = " << cloud->size();
+	this->points_xyz->clear();
+	if (!iscrop)
+	{
+		pcl::copyPointCloud(*cloud, *(this->points_xyz));
+		return;
+	}
+	else
+	{
+		// 根据transform-matrix裁剪一部分
+		int size = cloud->size();
+		std::cout << "cloud-size = " << size << std::endl;
+		int row_bound = this->image.rows;
+		int column_bound = this->image.cols;
+		for (int i = 0; i < size; i++)
+		{
+			pcl::PointXYZ point = cloud->points[i];
+			double a_[4] = { point.x, point.y, point.z, 1.0 };
+			cv::Mat pos(4, 1, CV_64F, a_);
+			cv::Mat newpos(this->transform_matrix * pos);
+			float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
+			float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
+			if (point.x >= 0)
+			{
+				if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
+				{
+					this->points_xyz->push_back(point);
+				}
+			}
+		}
+		std::cout << "size = " << this->points_xyz->size();
+	}
+}
+LvxObj::~LvxObj()
+{
+}

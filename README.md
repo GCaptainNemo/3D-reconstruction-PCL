@@ -29,11 +29,19 @@ VS2017 + PCL1.8.1
 
 ![image](./result/greedy_tri.png)
 
-### 3. 真彩色点云(lvx-一帧6000点)
+### 3. 真彩色点云(lvx-5帧30000点)
 
-![image](./result/lvx_rgb_pc.jpg)
+![image](./result/lvx_rgb_pcs.png)
 
+### 4. 贪婪投影三角化(lvx-5帧30000点)
 
+![image](./result/greedy_tri_lvx_pcs.png)
 
-## 五、参考
+## 五、总结
+1. 计算法线前，可以用MovingLeastSquares或者BilateralUpsampling让点云变得更加稠密，从而在曲面重建中有更好的逼近，更少的孔洞。
+2. 法线估计可以使用radius search或者K-neighbour search。
+
+## 六、参考
 [1] 解析.lvx文件代码参考[pylvx](https://github.com/Jaesirky/pylvx)
+
+[2] [https://stackoverflow.com/questions/32362891/pcl-greedyprojectiontriangulation-makes-not-enough-faces](https://stackoverflow.com/questions/32362891/pcl-greedyprojectiontriangulation-makes-not-enough-faces)

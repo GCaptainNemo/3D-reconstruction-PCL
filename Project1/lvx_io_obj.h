@@ -11,10 +11,11 @@ class LvxObj
 public:
 	LvxObj();
 	~LvxObj();
-	void project_get_rgb();
 	void set_calib();
 	void read_image(const char *filename);
 	void read_pcd_xyz(const char *filename, const bool &iscrop);
+	void read_pcds_xyz(const std::string &dir, const bool &iscrop, const int & frame_num);
+	void project_get_rgb();
 	static void lvx2pcd(const char * filedir, const char * option);
 	static void openPCDfile(const char * file_dir, const bool &show);
 

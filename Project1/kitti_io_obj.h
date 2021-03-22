@@ -10,16 +10,16 @@
 #include <opencv2/highgui/highgui.hpp> 
 
 
-class ioOBJ 
+class KittiObj 
 {
 public:
-	ioOBJ();
-	~ioOBJ();
+	KittiObj();
+	~KittiObj();
 public:
 	void bin2pcd(const char *filenameInput, const char *filenameOutput);   
 	void bin2pcd2(const std::string & infile, const std::string & outfile);
-	void read_bin_xyzi(const std::string & filename, bool iscrop);
-	void read_bin_xyz(const std::string &filename, bool iscrop);
+	void read_bin_xyzi(const std::string & filename, const bool &iscrop);
+	void read_bin_xyz(const char *filename, const bool &iscrop);
 	void project_get_rgb();
 	void read_calib(const char *filename);
 	void read_pointcloud(const char *filename);

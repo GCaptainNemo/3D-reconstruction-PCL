@@ -15,7 +15,7 @@
 
 
 
-ioOBJ::ioOBJ() 
+KittiObj::KittiObj() 
 {
 	this->points_xyzi = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>);
 	this->points_xyzrgb = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -23,11 +23,11 @@ ioOBJ::ioOBJ()
 
 }
 
-ioOBJ::~ioOBJ() {
+KittiObj::~KittiObj() {
 
 }
 
-void ioOBJ::bin2pcd2(const std::string & infile, const std::string & outfile)
+void KittiObj::bin2pcd2(const std::string & infile, const std::string & outfile)
 {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points(new pcl::PointCloud<pcl::PointXYZI>);
 	
@@ -54,7 +54,7 @@ void ioOBJ::bin2pcd2(const std::string & infile, const std::string & outfile)
 }
 
 
-void ioOBJ::bin2pcd(const char *filenameInput, const char *filenameOutput) 
+void KittiObj::bin2pcd(const char *filenameInput, const char *filenameOutput) 
 { 
 	//批量转换，filenameList用于保存文件名
 	int32_t num = 1000000;
@@ -94,7 +94,7 @@ void ioOBJ::bin2pcd(const char *filenameInput, const char *filenameOutput)
 	fclose(writePCDStream);
 }
 
-void ioOBJ::read_calib(const char * filename)
+void KittiObj::read_calib(const char * filename)
 {
 	ifstream in(filename);
 	std::string s;
@@ -173,7 +173,7 @@ void ioOBJ::read_calib(const char * filename)
 
 
 
-void ioOBJ::read_image(const char * filename)
+void KittiObj::read_image(const char * filename)
 {
 	this->image = cv::imread(filename).clone();
 	/*cv::namedWindow("测试opencv");
@@ -182,9 +182,9 @@ void ioOBJ::read_image(const char * filename)
 	*/
 }
 
-void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
+void KittiObj::read_bin_xyz(const char * filename, const bool &iscrop)
 {
-	fstream input(filename.c_str(), ios::in | ios::binary);
+	fstream input(filename, ios::in | ios::binary);
 	if (!input.good())
 	{
 		cerr << "Could not read file: " << filename << endl;
@@ -234,7 +234,7 @@ void ioOBJ::read_bin_xyz(const std::string &filename, bool iscrop)
 }
 
 
-void ioOBJ::project_get_rgb() {
+void KittiObj::project_get_rgb() {
 	
 	int size = this->points_xyz->size();
 	int row_bound = this->image.rows;
@@ -274,7 +274,7 @@ void ioOBJ::project_get_rgb() {
 	std::cout << "after_projected_get_rgb = " << this->points_xyz->size();
 };
 
-void ioOBJ::read_bin_xyzi(const std::string & filename, bool crop)
+void KittiObj::read_bin_xyzi(const std::string & filename, const bool &crop)
 {
 	// bug exists, don't use.
 	fstream input(filename.c_str(), ios::in | ios::binary);

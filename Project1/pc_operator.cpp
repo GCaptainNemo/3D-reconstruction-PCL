@@ -118,9 +118,9 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_
 	pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal> gp3;   // 定义三角化对象
 	
 	// 设置三角化参数
-	gp3.setSearchRadius(0.1);  //设置搜索时KNN的球半径
+	gp3.setSearchRadius(1);  //设置搜索时KNN的球半径
 	gp3.setMu(2.5);  //设置样本点搜索其近邻点的最远距离为2.5倍（典型值2.5-3），这样使得算法自适应点云密度的变化
-	gp3.setMaximumNearestNeighbors(50);    //设置样本点最多可搜索的邻域个数，典型值是50-100
+	gp3.setMaximumNearestNeighbors(200);    //设置样本点最多可搜索的邻域个数，典型值是50-100
 
 	gp3.setMinimumAngle(M_PI / 36); // 设置三角化后三角形内角最小角度为5°
 	gp3.setMaximumAngle(2 * M_PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°

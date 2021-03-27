@@ -23,19 +23,19 @@ VS2017 + PCL1.8.1
 
 ## 四、结果:
 ### 4.1 贪婪投影三角法网格化
-### 1. 真彩色点云(KITTI)
+#### 1. 真彩色点云(KITTI)
 
 ![image](./result/rgb_pc.png)
 
-### 2. 贪婪投影三角化(KITTI)
+#### 2. 贪婪投影三角化(KITTI)
 
 ![image](./result/greedy_tri.png)
 
-### 3. 真彩色点云(lvx-5帧30000点)
+#### 3. 真彩色点云(lvx-5帧30000点)
 
 ![image](./result/lvx_rgb_pcs.png)
 
-### 4. 贪婪投影三角化(lvx-5帧30000点)
+#### 4. 贪婪投影三角化(lvx-5帧30000点)
 
 ![image](./result/greedy_tri_lvx_pcs.png)
 
@@ -43,11 +43,11 @@ VS2017 + PCL1.8.1
 
 ### 4.2 深度图网格化
 
-### 1. 用点云生成深度图(200帧，240万点)
+#### 1. 用点云生成深度图(200帧，240万点)
 
 ![image](./result/rangeImage.png)
 
-### 2. 用深度图进行网格化
+#### 2. 用深度图进行网格化
 
 ![image](./result/rangeImage_reconstruction.png)
 

@@ -1,9 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
-#include <pcl/visualization/cloud_viewer.h>//点云查看窗口头文件
+#include <pcl/visualization/cloud_viewer.h>
 #include <pcl/range_image/range_image.h>
+#include <pcl/range_image/range_image_planar.h>
 #include <pcl/visualization/range_image_visualizer.h>
 #include <pcl/visualization/common/float_image_utils.h>
+#include <pcl/surface/impl/organized_fast_mesh.hpp> 
+#include <pcl/surface/organized_fast_mesh.h>
 #include "kitti_io_obj.h"
 #include "pc_operator.h"
 #include "lvx_io_obj.h"
@@ -104,13 +107,13 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 	}
 	else if (strcmp(option, "rangeImage") == 0) 
 	{ 
-		// 点云生成深度图
+		// 点云生成深度图（球面投影）
 		// 用boost是为了显示
 		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
 		pcl::RangeImage& range_image = *range_image_ptr;
 		
 		//noiseLevel设置周围点对当前点深度值的影响：
-		//如 noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
+		//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
 
 		float noise_level = 0.0;      //各种参数的设置
 		float min_range = 0.0f;
@@ -121,8 +124,15 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		float maxAngleWidth = pcl::deg2rad(81.7f);
 		float maxAngleHeight = pcl::deg2rad(25.1f);
 		pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
-		range_image.createFromPointCloud(*lvx_obj.points_xyz, angularResolution, maxAngleWidth, maxAngleHeight,
-			sensor_pose, coordinate_frame, noise_level, min_range, border_size);
+		range_image.createFromPointCloud(*lvx_obj.points_xyz, 
+			angularResolution, 
+			maxAngleWidth, 
+			maxAngleHeight,
+			sensor_pose, 
+			coordinate_frame, 
+			noise_level, 
+			min_range, 
+			border_size);
 		
 		// save
 		float *ranges = range_image.getRangesArray();
@@ -156,13 +166,74 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 					noise_level, 
 					min_range, 
 					border_size);
-
 				range_image_widget.showRangeImage(range_image);
 			}
-		}		
+		}	
+		std::cout << "success" << std::endl;
+	}
+	else if (strcmp(option, "rangeImagePlanar") == 0) 
+	{
+		// 点云生成深度图（球面投影）
+		// 用boost是为了显示
+		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
+		pcl::RangeImage& range_image = *range_image_ptr;
+
+		//noiseLevel设置周围点对当前点深度值的影响：
+		//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
+
+		float noise_level = 0.0;      //各种参数的设置
+		float min_range = 0.0f;
+		int border_size = 1;
+		Eigen::Affine3f sensor_pose = Eigen::Affine3f::Identity();
+
+		float angularResolution = pcl::deg2rad(0.03f);  // 0.03度转弧度
+		float maxAngleWidth = pcl::deg2rad(81.7f);
+		float maxAngleHeight = pcl::deg2rad(25.1f);
+		pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
+		range_image.createFromPointCloud(*lvx_obj.points_xyzrgb,
+			angularResolution,
+			maxAngleWidth,
+			maxAngleHeight,
+			sensor_pose,
+			coordinate_frame,
+			noise_level,
+			min_range,
+			border_size);
+		std::cout << "range_image finish" << "\n";
+		std::cout << "range_image_size = " << range_image.size()<< std::endl;
+		//viusalization of range image
+		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
+		range_image_widget.showRangeImage(range_image);
+		range_image_widget.setWindowTitle("RangeImage");
+
+		//triangulation based on range image
+		pcl::OrganizedFastMesh<pcl::PointWithRange>::Ptr tri(new pcl::OrganizedFastMesh<pcl::PointWithRange>);
+		pcl::search::KdTree<pcl::PointWithRange>::Ptr tree(new pcl::search::KdTree<pcl::PointWithRange>);
+		tree->setInputCloud(range_image_ptr);
+		
+		pcl::PolygonMesh triangles;
+		tri->setTrianglePixelSize(3);
+		tri->setInputCloud(range_image_ptr);
+		tri->setSearchMethod(tree);
+		//tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_RIGHT_CUT);
+		tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_ADAPTIVE_CUT);
+
+		tri->reconstruct(triangles);
+		pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/imageRange.ply", triangles);
+
+		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
+		viewer->setBackgroundColor(0., 0., 0.);
+		viewer->addPolygonMesh(triangles, "tin");
+		viewer->addCoordinateSystem();
+		while (!range_image_widget.wasStopped() && !viewer->wasStopped())
+		{
+			range_image_widget.spinOnce();
+			Sleep(0.01);
+			viewer->spinOnce();
+		}
 	}
 	else {
-		// 点云网格化(贪婪投影三角形 和 poisson重建都需要点云 + 点云法向量)
+		// 用点云meshing(贪婪投影三角形和poisson重建：点云 + 点云法向量)
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10); // estimate point cloud normal vector
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
@@ -199,7 +270,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "rangeImage");
+	dealwith_lvx(false, "rangeImagePlanar");
 	return 0;
 }
 

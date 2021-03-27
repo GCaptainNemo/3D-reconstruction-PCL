@@ -103,8 +103,6 @@ void pc_operator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	normalEstimation.compute(*normals);               //计算法线
 	// 输出法线
 	std::cout << "normals: " << normals->size() << ", " << "normals fields: " << pcl::getFieldsList(*normals) << std::endl;
-
-
 }
 
 
@@ -227,8 +225,6 @@ void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXY
 		cloud_color_mesh.points[i].r = int(red / pointIdxNKNSearch.size() + 0.5);   // PCL 版本1.9之前用float表示颜色，1.9之后用int
 		cloud_color_mesh.points[i].g = int(green / pointIdxNKNSearch.size() + 0.5);
 		cloud_color_mesh.points[i].b = int(blue / pointIdxNKNSearch.size() + 0.5);
-
-
 	}
 	pcl::toPCLPointCloud2(cloud_color_mesh, mesh.cloud);
 }

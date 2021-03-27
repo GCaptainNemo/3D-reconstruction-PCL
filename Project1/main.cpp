@@ -1,13 +1,18 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <pcl/visualization/cloud_viewer.h>//点云查看窗口头文件
+#include <pcl/range_image/range_image.h>
+#include <pcl/visualization/range_image_visualizer.h>
+#include <pcl/visualization/common/float_image_utils.h>
 #include "kitti_io_obj.h"
 #include "pc_operator.h"
 #include "lvx_io_obj.h"
+#include <pcl/io/png_io.h>
 #include <iostream>
 #include <string>
 
 using namespace pcl;
+#define M_PI 3.1415926535
 
 void dealwith_kitti(const bool &preprocess, const char * option) 
 {
@@ -72,7 +77,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 	const std::string dir = "./output";
 	lvx_obj.read_image("../resources/livox_hikvision/test.png");
 	lvx_obj.set_calib();
-	lvx_obj.read_pcds_xyz(dir, true, 5);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -97,6 +102,65 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		{
 		}
 	}
+	else if (strcmp(option, "rangeImage") == 0) 
+	{ 
+		// 点云生成深度图
+		// 用boost是为了显示
+		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
+		pcl::RangeImage& range_image = *range_image_ptr;
+		
+		//noiseLevel设置周围点对当前点深度值的影响：
+		//如 noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
+
+		float noise_level = 0.0;      //各种参数的设置
+		float min_range = 0.0f;
+		int border_size = 1;
+		Eigen::Affine3f sensor_pose = Eigen::Affine3f::Identity();
+
+		float angularResolution = pcl::deg2rad(0.03f);  // 0.03度转弧度
+		float maxAngleWidth = pcl::deg2rad(81.7f);
+		float maxAngleHeight = pcl::deg2rad(25.1f);
+		pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
+		range_image.createFromPointCloud(*lvx_obj.points_xyz, angularResolution, maxAngleWidth, maxAngleHeight,
+			sensor_pose, coordinate_frame, noise_level, min_range, border_size);
+		
+		// save
+		float *ranges = range_image.getRangesArray();
+		unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
+		pcl::io::saveRgbPNGFile("../result/rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
+
+		// visualizer
+		pcl::visualization::RangeImageVisualizer range_image_widget("Range image");        
+		range_image_widget.showRangeImage(range_image); //图像可视化方式显示深度图像
+		pcl::visualization::PCLVisualizer viewer("3D Viewer");
+		viewer.setBackgroundColor(1, 1, 1);
+		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointWithRange> range_image_color_handler(range_image_ptr, 0, 0, 0);
+		viewer.addPointCloud(range_image_ptr, range_image_color_handler, "range image");
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "range image");
+		viewer.initCameraParameters();
+		bool live_update = false;
+		while (!viewer.wasStopped())
+		{
+			range_image_widget.spinOnce();
+			viewer.spinOnce();
+			Sleep(0.01);
+			if (live_update)
+			{
+				sensor_pose = viewer.getViewerPose();
+				range_image.createFromPointCloud(*lvx_obj.points_xyz, 
+					angularResolution, 
+					maxAngleWidth, 
+					maxAngleHeight,
+					sensor_pose, 
+					coordinate_frame, 
+					noise_level, 
+					min_range, 
+					border_size);
+
+				range_image_widget.showRangeImage(range_image);
+			}
+		}		
+	}
 	else {
 		// 点云网格化(贪婪投影三角形 和 poisson重建都需要点云 + 点云法向量)
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
@@ -117,13 +181,14 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		viewer->addPolygonMesh(mesh, "mesh");
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
+		//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
 		while (!viewer->wasStopped()) {
 			viewer->spinOnce(100);
 			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 		}
 		std::cout << "success" << std::endl;
 	}
-	//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", triangles);
+	
 }
 
 int main()
@@ -134,7 +199,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(true, "greedy");
+	dealwith_lvx(false, "rangeImage");
 	return 0;
 }
 

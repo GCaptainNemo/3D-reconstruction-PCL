@@ -19,8 +19,10 @@ VS2017 + PCL1.8.1
 1. 读取.lvx文件，转换成pcd文件
 2. 读取hikvision拍摄视频
 3. 后续方法同2.1
+4. **补充**：利用深度图进行网格化
 
 ## 四、结果:
+### 4.1 贪婪投影三角法网格化
 ### 1. 真彩色点云(KITTI)
 
 ![image](./result/rgb_pc.png)
@@ -36,6 +38,20 @@ VS2017 + PCL1.8.1
 ### 4. 贪婪投影三角化(lvx-5帧30000点)
 
 ![image](./result/greedy_tri_lvx_pcs.png)
+
+随着处理帧数的增多，网格会更加致密，空洞会减少，但后续仍需要进行网格修复(mesh repair)，才能得到较好的重建结果。
+
+### 4.2 深度图网格化
+
+### 1. 用点云生成深度图(200帧，240万点)
+
+![image](./result/rangeImage.png)
+
+### 2. 用深度图进行网格化
+
+![image](./result/rangeImage_reconstruction.png)
+
+
 
 ## 五、总结
 1. 计算法线前，可以用MovingLeastSquares或者BilateralUpsampling让点云变得更加稠密，从而在曲面重建中有更好的逼近，更少的孔洞。

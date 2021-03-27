@@ -73,9 +73,16 @@ void LvxObj::openPCDfile(const char * file_dir, const bool &show)
 	}
 }
 
-void LvxObj::read_image(const char *filename)
+void LvxObj::read_image(const char *filename, const bool & correct)
 {
-	this->image = cv::imread(filename).clone();
+	
+	cv::Mat image_ = cv::imread(filename).clone();
+	if (correct) 
+	{
+		std::cout << "correct begin" << std::endl;
+		cv::undistort(image_, this->image, this->intrinsic_matrix, this->dist_matrix);
+		std::cout << "correct end \n";
+	}
 	cv::namedWindow("²âÊÔopencv");
 	cv::imshow("²âÊÔopencv", this->image);
 	cv::waitKey(6000);
@@ -90,6 +97,11 @@ void LvxObj::set_calib()
 		-5.6030465241367899e-03, -9.9995961043041048e-01,
 		-7.0273307528522788e-03, 6.9595232605934143e-02, 
 		0., 0., 0., 1. };
+	double dist[5] = { 4.9811000000000001e-02, -2.7529999999999998e-03,
+	   -2.2499999999999998e-03, 3.9249999999999997e-03, 0. };
+	cv::Mat dist_array(5, 1, CV_64F, dist);
+	this->dist_matrix = dist_array.clone();
+
 	cv::Mat ext_(4, 4, CV_64F, Extrin_matrix);
 	cv::Mat invRt = ext_(cv::Rect(0, 0, 3, 3));                       // Camera extrinsic rotation matrix (Invert from world extrinsic).
 	cv::Mat R = invRt.t();
@@ -99,15 +111,14 @@ void LvxObj::set_calib()
 	   1.6652231500000000e+03, 5.1716867000000002e+02, 0., 0., 1. };
 	cv::Mat Int(3, 3, CV_64F, Intrinsic);
 	cv::hconcat(R, invT, this->transform_matrix);
-
+	this->intrinsic_matrix = Int.clone();
 	this->transform_matrix = Int * this->transform_matrix;
 	for (int row = 0; row < 3; row++) {
 		for (int column = 0; column < 4; column++) {
 			std::cout << this->transform_matrix.at<double>(row, column) <<std::endl;
 		}
 	}
-	double dist[5] = { 4.9811000000000001e-02, -2.7529999999999998e-03,
-	   -2.2499999999999998e-03, 3.9249999999999997e-03, 0. };
+	
 }
 
 

@@ -12,7 +12,7 @@ public:
 	LvxObj();
 	~LvxObj();
 	void set_calib();
-	void read_image(const char *filename);
+	void read_image(const char *filename, const bool & correct);
 	void read_pcd_xyz(const char *filename, const bool &iscrop);
 	void read_pcds_xyz(const std::string &dir, const bool &iscrop, const int & frame_num);
 	void project_get_rgb();
@@ -22,6 +22,8 @@ public:
 public:
 	cv::Mat transform_matrix;
 	cv::Mat image;
+	cv::Mat intrinsic_matrix;
+	cv::Mat dist_matrix;
 
 public:
 	pcl::PointCloud<pcl::PointXYZI>::Ptr points_xyzi;

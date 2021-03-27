@@ -78,8 +78,8 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 {
 	LvxObj lvx_obj;
 	const std::string dir = "./output";
-	lvx_obj.read_image("../resources/livox_hikvision/test.png");
 	lvx_obj.set_calib();
+	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
 	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
@@ -106,72 +106,6 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		}
 	}
 	else if (strcmp(option, "rangeImage") == 0) 
-	{ 
-		// 点云生成深度图（球面投影）
-		// 用boost是为了显示
-		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
-		pcl::RangeImage& range_image = *range_image_ptr;
-		
-		//noiseLevel设置周围点对当前点深度值的影响：
-		//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
-
-		float noise_level = 0.0;      //各种参数的设置
-		float min_range = 0.0f;
-		int border_size = 1;
-		Eigen::Affine3f sensor_pose = Eigen::Affine3f::Identity();
-
-		float angularResolution = pcl::deg2rad(0.03f);  // 0.03度转弧度
-		float maxAngleWidth = pcl::deg2rad(81.7f);
-		float maxAngleHeight = pcl::deg2rad(25.1f);
-		pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
-		range_image.createFromPointCloud(*lvx_obj.points_xyz, 
-			angularResolution, 
-			maxAngleWidth, 
-			maxAngleHeight,
-			sensor_pose, 
-			coordinate_frame, 
-			noise_level, 
-			min_range, 
-			border_size);
-		
-		// save
-		float *ranges = range_image.getRangesArray();
-		unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
-		pcl::io::saveRgbPNGFile("../result/rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
-
-		// visualizer
-		pcl::visualization::RangeImageVisualizer range_image_widget("Range image");        
-		range_image_widget.showRangeImage(range_image); //图像可视化方式显示深度图像
-		pcl::visualization::PCLVisualizer viewer("3D Viewer");
-		viewer.setBackgroundColor(1, 1, 1);
-		pcl::visualization::PointCloudColorHandlerCustom<pcl::PointWithRange> range_image_color_handler(range_image_ptr, 0, 0, 0);
-		viewer.addPointCloud(range_image_ptr, range_image_color_handler, "range image");
-		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "range image");
-		viewer.initCameraParameters();
-		bool live_update = false;
-		while (!viewer.wasStopped())
-		{
-			range_image_widget.spinOnce();
-			viewer.spinOnce();
-			Sleep(0.01);
-			if (live_update)
-			{
-				sensor_pose = viewer.getViewerPose();
-				range_image.createFromPointCloud(*lvx_obj.points_xyz, 
-					angularResolution, 
-					maxAngleWidth, 
-					maxAngleHeight,
-					sensor_pose, 
-					coordinate_frame, 
-					noise_level, 
-					min_range, 
-					border_size);
-				range_image_widget.showRangeImage(range_image);
-			}
-		}	
-		std::cout << "success" << std::endl;
-	}
-	else if (strcmp(option, "rangeImagePlanar") == 0) 
 	{
 		// 点云生成深度图（球面投影）
 		// 用boost是为了显示
@@ -205,6 +139,12 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
 		range_image_widget.showRangeImage(range_image);
 		range_image_widget.setWindowTitle("RangeImage");
+
+		//// save
+		//float *ranges = range_image.getRangesArray();
+		//unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
+		//pcl::io::saveRgbPNGFile("../result/rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
+
 
 		//triangulation based on range image
 		pcl::OrganizedFastMesh<pcl::PointWithRange>::Ptr tri(new pcl::OrganizedFastMesh<pcl::PointWithRange>);
@@ -270,7 +210,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "rangeImagePlanar");
+	dealwith_lvx(false, "pc");
 	return 0;
 }
 

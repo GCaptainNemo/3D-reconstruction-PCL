@@ -1,0 +1,10 @@
+.vs/
+Project1/pcl_common_debug.dll
+Project1/pcl_io_debug.dll
+Project1/x64/
+resources/
+x64/
+
+Project1/output/
+Project1/lvx_parser/__pycache__/
+Project1/linshi/

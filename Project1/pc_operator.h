@@ -1,6 +1,7 @@
 #pragma once
 
-
+#include <pcl/range_image/range_image.h>
+#include <pcl/range_image/range_image_planar.h>
 #include <pcl/point_types.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
@@ -37,6 +38,7 @@ public:
 	static void estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 		pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints);
 
+	// surface reconstruction algorithm
 	static void triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 		pcl::PolygonMesh &triangles);
 	
@@ -48,13 +50,15 @@ public:
 
 	static void color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
 
+	static void pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb);
 
+	static void range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr);
 
-	/*pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
-	pcl::PointCloud<PointT>::Ptr cloud_downSampled(new pcl::PointCloud<PointT>);
-	pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-	pcl::PointCloud<PointT>::Ptr cloud_smoothed(new pcl::PointCloud<PointT>);*/
-	
+ //  /*pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
+	//pcl::PointCloud<PointT>::Ptr cloud_downSampled(new pcl::PointCloud<PointT>);
+	//pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
+	//pcl::PointCloud<PointT>::Ptr cloud_smoothed(new pcl::PointCloud<PointT>);*/
+	//
 	
 	
 };

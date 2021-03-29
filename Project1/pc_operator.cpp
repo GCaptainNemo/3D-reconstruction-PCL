@@ -1,6 +1,7 @@
 #include "pc_operator.h"
 
 
+
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
@@ -11,6 +12,11 @@
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/poisson.h>
 #include <pcl/io/ply_io.h>
+#include <pcl/surface/impl/organized_fast_mesh.hpp> 
+#include <pcl/surface/organized_fast_mesh.h>
+#include <pcl/io/png_io.h>
+
+
 
 void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
@@ -229,6 +235,54 @@ void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXY
 	pcl::toPCLPointCloud2(cloud_color_mesh, mesh.cloud);
 }
 
+void pc_operator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)
+{
+	//noiseLevel设置周围点对当前点深度值的影响：
+			//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
+	float noise_level = 0.0;      //各种参数的设置
+	float min_range = 0.0f;
+	int border_size = 1;
+	Eigen::Affine3f sensor_pose = Eigen::Affine3f::Identity();
+
+	float angularResolution = pcl::deg2rad(0.03f);  // 0.03度转弧度
+	float maxAngleWidth = pcl::deg2rad(81.7f);
+	float maxAngleHeight = pcl::deg2rad(25.1f);
+	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
+	range_image.createFromPointCloud(*points_xyzrgb,
+		angularResolution,
+		maxAngleWidth,
+		maxAngleHeight,
+		sensor_pose,
+		coordinate_frame,
+		noise_level,
+		min_range,
+		border_size);
+	std::cout << "range_image finish" << "\n";
+	std::cout << "range_image_size = " << range_image.size() << std::endl;
+	
+
+	//// save
+	//float *ranges = range_image.getRangesArray();
+	//unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
+	//pcl::io::saveRgbPNGFile("../result/rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
+
+};
+
+void pc_operator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr)
+{
+	pcl::OrganizedFastMesh<pcl::PointWithRange>::Ptr tri(new pcl::OrganizedFastMesh<pcl::PointWithRange>);
+	pcl::search::KdTree<pcl::PointWithRange>::Ptr tree(new pcl::search::KdTree<pcl::PointWithRange>);
+	tree->setInputCloud(range_image_ptr);
+	tri->setTrianglePixelSize(3);
+	tri->setInputCloud(range_image_ptr);
+	tri->setSearchMethod(tree);
+	//tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_RIGHT_CUT);
+	tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_ADAPTIVE_CUT);
+
+	tri->reconstruct(triangles);
+	// pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/imageRange.ply", triangles);
+
+};
 
 
 

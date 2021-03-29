@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <Python.h>
-#include <pcl/io/pcd_io.h>//pcd 读写类相关的头文件。
+#include <pcl/io/pcd_io.h>
 #include <io.h>
 
 

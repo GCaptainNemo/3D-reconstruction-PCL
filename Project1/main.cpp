@@ -73,13 +73,13 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 	//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
 }
 
-void dealwith_lvx(const bool &preprocess, const char * option)
+void dealwith_lvx(const bool &preprocess, const char * option, const bool & save)
 {
 	LvxObj lvx_obj;
 	const std::string dir = "./output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 200);
+	lvx_obj.read_pcds_xyz(dir, true, 5);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -87,7 +87,6 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 	if (preprocess) {
 		pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
 		pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
-		// pcl::io::savePCDFile("/pcd", *cloud);
 		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.05); // Æ½»¬
 		pc_operator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
 		pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
@@ -103,6 +102,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		while (!viewer.wasStopped())
 		{
 		}
+		if (save) { pcl::io::savePCDFile("./linshi/color_pc.pcd", *lvx_obj.points_xyzrgb); }
 	}
 	else if (strcmp(option, "rangeImage") == 0) 
 	{
@@ -130,6 +130,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 			Sleep(0.01);
 			viewer->spinOnce();
 		}
+		if (save){pcl::io::savePLYFileBinary("./linshi/mesh_rangeimage.ply", mesh);}
 	}
 	else if(strcmp(option, "bspline")==0)
 	{
@@ -165,13 +166,14 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
-		//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
 		while (!viewer->wasStopped()) {
 			viewer->spinOnce(100);
 			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 		}
+		if (save){pcl::io::savePLYFileBinary("./linshi/pp_mesh.ply", mesh);}
 		std::cout << "success" << std::endl;
 	}
+	
 }
 
 
@@ -184,7 +186,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "greedy");
+	dealwith_lvx(false, "greedy", true);
 	return 0;
 }
 

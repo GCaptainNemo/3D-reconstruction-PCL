@@ -274,9 +274,7 @@ void pc_operator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::sh
 	tri->setSearchMethod(tree);
 	//tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_RIGHT_CUT);
 	tri->setTriangulationType(pcl::OrganizedFastMesh<pcl::PointWithRange>::TRIANGLE_ADAPTIVE_CUT);
-
 	tri->reconstruct(triangles);
-	// pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/imageRange.ply", triangles);
 };
 
 

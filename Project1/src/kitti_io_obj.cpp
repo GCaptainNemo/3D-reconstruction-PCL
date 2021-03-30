@@ -10,8 +10,8 @@
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
 #include <opencv2/opencv.hpp>
-#include "kitti_io_obj.h"
-#include "utils.h"
+#include "../include/kitti_io_obj.h"
+#include "../include/utils.h"
 
 
 

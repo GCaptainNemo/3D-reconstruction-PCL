@@ -15,34 +15,37 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="pc_operator.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="kitti_io_obj.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="kitti_io_obj.h">
+    <ClInclude Include="include\kitti_io_obj.h">
       <Filter>头文件</Filter>
-    </ClCompile>
-    <ClCompile Include="lvx_io_obj.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="include\lvx_io_obj.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\main.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pc_operator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="utils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="pc_operator.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="lvx_io_obj.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="src\kitti_io_obj.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lvx_io_obj.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pc_operator.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

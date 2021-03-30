@@ -3,8 +3,8 @@
 1. 利用C++ PCL库对KITTI数据集进行三维重建
 2. 利用livox激光雷达和hikvision相机进行三维重建
 
-## 二、环境：
-VS2017 + PCL1.8.1
+## 二、依赖库：
+PCL1.8.1 + OpenCV
 
 ## 三、实验步骤：
 ### 3.1 KITTI三维重建
@@ -37,7 +37,7 @@ poisson重建和样条重建都利用了流形假设，使用一个曲面拟合�
 
 ![image](./result/greedy_tri.png)
 
-#### 2. 贪婪投影三角化(lvx-200帧240万点)
+#### 2. 贪婪投影三角化(240万点)
 
 ![image](./result/greedy_tri_lvx.png)
 
@@ -45,7 +45,7 @@ poisson重建和样条重建都利用了流形假设，使用一个曲面拟合�
 
 ### 4.3 深度图网格化
 
-#### 1. 用点云生成深度图(200帧，240万点)
+#### 1. 用点云生成深度图(240万点)
 
 ![image](./result/rangeImage.png)
 
@@ -64,3 +64,5 @@ poisson重建和样条重建都利用了流形假设，使用一个曲面拟合�
 
 ## 六、参考
 [1] 解析.lvx文件代码参考[pylvx](https://github.com/Jaesirky/pylvx)
+
+[2] [poisson重建-后处理](https://blog.csdn.net/u012750702/article/details/53351941)

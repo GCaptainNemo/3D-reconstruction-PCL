@@ -22,7 +22,6 @@ public:
 	void read_bin_xyz(const char *filename, const bool &iscrop);
 	void project_get_rgb();
 	void read_calib(const char *filename);
-	void read_pointcloud(const char *filename);
 	void read_image(const char *filename);
 
 

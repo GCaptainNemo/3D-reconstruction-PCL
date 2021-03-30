@@ -4,9 +4,9 @@
 #include <pcl/visualization/range_image_visualizer.h>
 #include <pcl/visualization/common/float_image_utils.h>
 
-#include "kitti_io_obj.h"
-#include "pc_operator.h"
-#include "lvx_io_obj.h"
+#include "../include/kitti_io_obj.h"
+#include "../include/pc_operator.h"
+#include "../include/lvx_io_obj.h"
 #include <iostream>
 #include <string>
 
@@ -79,7 +79,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	const std::string dir = "./output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 5);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -147,9 +147,12 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		if (strcmp(option, "poisson") == 0) {
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
 			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+			if (save) { pcl::io::savePLYFileBinary("./linshi/poisson_mesh.ply", mesh); }
+
 		}
 		else if (strcmp(option, "greedy") == 0) {
 			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
+			if (save) { pcl::io::savePLYFileBinary("./linshi/greedy_mesh.ply", mesh); }
 		}
 		// 显示网格化结果
 		
@@ -170,7 +173,6 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			viewer->spinOnce(100);
 			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 		}
-		if (save){pcl::io::savePLYFileBinary("./linshi/pp_mesh.ply", mesh);}
 		std::cout << "success" << std::endl;
 	}
 	
@@ -186,7 +188,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "greedy", true);
+	dealwith_lvx(false, "poisson", true);
 	return 0;
 }
 

@@ -1,4 +1,4 @@
-#include "pc_operator.h"
+#include "../include/pc_operator.h"
 
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/radius_outlier_removal.h>

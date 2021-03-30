@@ -18,6 +18,20 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\kitti_io_obj.h" />
+    <ClInclude Include="include\lvx_io_obj.h" />
+    <ClInclude Include="include\main.h" />
+    <ClInclude Include="include\pc_operator.h" />
+    <ClInclude Include="include\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\kitti_io_obj.cpp" />
+    <ClCompile Include="src\lvx_io_obj.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\pc_operator.cpp" />
+    <ClCompile Include="src\utils.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{D8A0129C-6D1A-4AD8-BEA3-7CEF3E372BA9}</ProjectGuid>
@@ -141,19 +155,6 @@
       <StackReserveSize>409715200</StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="kitti_io_obj.cpp" />
-    <ClCompile Include="kitti_io_obj.h" />
-    <ClCompile Include="lvx_io_obj.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="pc_operator.cpp" />
-    <ClCompile Include="utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="lvx_io_obj.h" />
-    <ClInclude Include="pc_operator.h" />
-    <ClInclude Include="utils.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

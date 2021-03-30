@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "../include/utils.h"
 
 
 std::vector<std::string> utils::split(const std::string &str, const std::string &pattern) 
@@ -18,6 +18,5 @@ std::vector<std::string> utils::split(const std::string &str, const std::string 
 		strs = strs.substr(pos + 1, strs.size());
 		pos = strs.find(pattern);
 	}
-
 	return res;
 }

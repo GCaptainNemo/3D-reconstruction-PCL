@@ -1,4 +1,4 @@
-#include "lvx_io_obj.h"
+#include "../include/lvx_io_obj.h"
 #include <pcl/visualization/cloud_viewer.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>

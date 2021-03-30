@@ -154,6 +154,12 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
 		viewer->addPolygonMesh(mesh, "mesh");
+		if (strcmp(option, "poisson") == 0) 
+		{
+			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
+			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
+		}
+
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
 		//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
@@ -175,7 +181,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "bspline");
+	dealwith_lvx(false, "poisson");
 	return 0;
 }
 

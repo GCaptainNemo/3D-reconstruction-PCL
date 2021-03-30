@@ -16,10 +16,8 @@
 #include <pcl/surface/organized_fast_mesh.h>
 #include <pcl/io/png_io.h>
 
-
 void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
-
 {
 	// 下采样
 	pcl::VoxelGrid<pcl::PointXYZ> downSampled;  //创建滤波对象
@@ -356,7 +354,7 @@ void pc_operator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr obj
 	curve_params.addCPsAccuracy = 5e-2;
 	curve_params.addCPsIteration = 3;
 	curve_params.maxCPs = 200;
-	curve_params.accuracy = 1;
+	curve_params.accuracy = 0.5;
 	curve_params.iterations = 100;
 
 	curve_params.param.closest_point_resolution = 0;
@@ -377,7 +375,7 @@ void pc_operator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr obj
 	pcl::on_nurbs::FittingCurve2dASDM curve_fit(&curve_data, curve_nurbs);
 	//curve_fit.setQuiet (false); // enable/disable debug output
 	curve_fit.fitting(curve_params);
-	visualizeCurve(curve_fit.m_nurbs, fit.m_nurbs, viewer);
+	//visualizeCurve(curve_fit.m_nurbs, fit.m_nurbs, viewer);
 
 	// ############################################################################
 	// triangulation of trimmed surface

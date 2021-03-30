@@ -6,14 +6,13 @@
 #include <pcl/surface/on_nurbs/fitting_curve_2d_asdm.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
 #include <pcl/visualization/cloud_viewer.h>
-
 #include <pcl/point_types.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 
 // typedef pcl::PointXYZ PointT;
 
-// 1. 下采样和滤波  2. 重采样平滑 3. 法线计算 4.将点云坐标、颜色、发现信息合在一起 5. 贪心投影网格化
+// 1. 下采样和滤波  2. 重采样平滑 3. 法线计算 4.将点云坐标、颜色合在一起 5. 曲面重建
 
 //[1]计算点云法向, 并将法向量指向内部
 //[2]将点云法向信息叠加在原点云上，生成pcl::PointXYZRGBNormal格式的点云
@@ -25,6 +24,8 @@ typedef pcl::PointXYZ Point;
 class pc_operator
 {
 public:
+
+	// pointcloud preprocessing
 	
 	static void down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downsampled, const float & voxel_size);
@@ -62,11 +63,6 @@ public:
 	static void range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr);
 
 	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
-
-	/*static void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);
-	
-	static void PointCloud2Vector3d(pcl::PointCloud<Point>::Ptr cloud, pcl::on_nurbs::vector_vec3d &data);
-*/
 	
 };
 

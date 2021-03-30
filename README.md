@@ -32,21 +32,14 @@ poisson重建和样条重建都利用了流形假设，使用一个曲面拟合�
 ![Bspline](./result/bspline.png)
 
 ### 4.2 贪婪投影三角法网格化
-#### 1. 真彩色点云(KITTI)
 
-![image](./result/rgb_pc.png)
-
-#### 2. 贪婪投影三角化(KITTI)
+#### 1. 贪婪投影三角化(KITTI)
 
 ![image](./result/greedy_tri.png)
 
-#### 3. 真彩色点云(lvx-5帧30000点)
+#### 2. 贪婪投影三角化(lvx-200帧240万点)
 
-![image](./result/lvx_rgb_pcs.png)
-
-#### 4. 贪婪投影三角化(lvx-5帧30000点)
-
-![image](./result/greedy_tri_lvx_pcs.png)
+![image](./result/greedy_tri_lvx.png)
 
 随着处理帧数的增多，网格会更加致密，空洞会减少，但后续仍需要进行网格修复(mesh repair)，才能得到较好的重建结果。
 
@@ -58,15 +51,14 @@ poisson重建和样条重建都利用了流形假设，使用一个曲面拟合�
 
 #### 2. 用深度图进行网格化
 
-![image](./result/rangeImage_reconstruction.png)
+![image](./result/rangeImage_reconstruction_color.png)
 
 
 
 ## 五、总结
-1. 计算法线前，可以用MovingLeastSquares或者BilateralUpsampling让点云变得更加稠密，从而在曲面重建中有更好的逼近，更少的孔洞。
-2. 法线估计可以使用radius search或者K-neighbour search。
+曲面重建算法可分为插值法和逼近法，其中贪婪投影三角化属于插值法，其余均为逼近法。在重建效果方面，贪婪投影三角法和基于深度图的重建算法效果较好。贪婪投影三角法噪声较多，
+可以在计算法线前用移动最小二乘法(MLS)重采样平滑和上采样增加点云密度；而基于深度图的重建的网格效果更致密，美中不足的是在纵向有较大距离改变的地方，深度图方法的网格几乎没有生成，
+这和深度图的分辨率有较大关系。
 
 ## 六、参考
 [1] 解析.lvx文件代码参考[pylvx](https://github.com/Jaesirky/pylvx)
-
-[2] [https://stackoverflow.com/questions/32362891/pcl-greedyprojectiontriangulation-makes-not-enough-faces](https://stackoverflow.com/questions/32362891/pcl-greedyprojectiontriangulation-makes-not-enough-faces)

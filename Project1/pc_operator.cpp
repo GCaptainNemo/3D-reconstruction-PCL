@@ -1,7 +1,5 @@
 #include "pc_operator.h"
 
-
-
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
@@ -15,6 +13,7 @@
 #include <pcl/surface/impl/organized_fast_mesh.hpp> 
 #include <pcl/surface/organized_fast_mesh.h>
 #include <pcl/io/png_io.h>
+#define PI 3.1415926535
 
 void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
@@ -123,10 +122,10 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_
 	gp3.setMu(2.5);  //设置样本点搜索其近邻点的最远距离为2.5倍（典型值2.5-3），这样使得算法自适应点云密度的变化
 	gp3.setMaximumNearestNeighbors(200);    //设置样本点最多可搜索的邻域个数，典型值是50-100
 
-	gp3.setMinimumAngle(M_PI / 36); // 设置三角化后三角形内角最小角度为5°
-	gp3.setMaximumAngle(2 * M_PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
+	gp3.setMinimumAngle(PI / 36); // 设置三角化后三角形内角最小角度为5°
+	gp3.setMaximumAngle(2 * PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
 
-	gp3.setMaximumSurfaceAngle(M_PI / 6); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
+	gp3.setMaximumSurfaceAngle(PI / 4); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
 	gp3.setNormalConsistency(false);  //设置该参数为true保证法线朝向一致，设置为false的话不会进行法线一致性检查
 
 	gp3.setInputCloud(cloud_with_normals);     //设置输入点云为有向点云
@@ -149,10 +148,10 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_n
 	gp3.setMu(2.5);  //设置样本点搜索其近邻点的最远距离为2.5倍（典型值2.5-3），这样使得算法自适应点云密度的变化
 	gp3.setMaximumNearestNeighbors(100);    //设置样本点最多可搜索的邻域个数，典型值是50-100
 
-	gp3.setMinimumAngle(M_PI / 18); // 设置三角化后得到的三角形内角的最小的角度为10°
-	gp3.setMaximumAngle(2 * M_PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
+	gp3.setMinimumAngle(PI / 18); // 设置三角化后得到的三角形内角的最小的角度为10°
+	gp3.setMaximumAngle(2 * PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
 
-	gp3.setMaximumSurfaceAngle(M_PI / 4); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
+	gp3.setMaximumSurfaceAngle(PI / 4); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
 	gp3.setNormalConsistency(false);  //设置该参数为true保证法线朝向一致，设置为false的话不会进行法线一致性检查
 
 	gp3.setInputCloud(cloud_with_normals);     //设置输入点云为有向点云
@@ -185,13 +184,13 @@ void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>
 }
 
 
-
-void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) 
+void pc_operator::color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) 
 {
 	// 用cloud给mesh染色
+	printf("in color mesh");
 	pcl::PointCloud<pcl::PointXYZRGB> cloud_color_mesh;
-	
 	pcl::fromPCLPointCloud2(mesh.cloud, cloud_color_mesh);
+	printf("in color mesh");
 
 	pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
 	kdtree.setInputCloud(cloud);
@@ -208,8 +207,6 @@ void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXY
 		int red = 0;
 		int green = 0;
 		int blue = 0;
-		uint32_t rgb;
-
 		if (kdtree.nearestKSearch(cloud_color_mesh.points[i], K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
 		{
 			for (int j = 0; j < pointIdxNKNSearch.size(); ++j)
@@ -225,11 +222,13 @@ void pc_operator::color_mesh(pcl::PolygonMesh mesh, pcl::PointCloud<pcl::PointXY
 				dist += 1.0 / pointNKNSquaredDistance[j];		
 			}
 		}
+		
 		cloud_color_mesh.points[i].r = int(red / pointIdxNKNSearch.size() + 0.5);   // PCL 版本1.9之前用float表示颜色，1.9之后用int
 		cloud_color_mesh.points[i].g = int(green / pointIdxNKNSearch.size() + 0.5);
 		cloud_color_mesh.points[i].b = int(blue / pointIdxNKNSearch.size() + 0.5);
 	}
 	pcl::toPCLPointCloud2(cloud_color_mesh, mesh.cloud);
+	printf("finish color mesh!\n");
 }
 
 void pc_operator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)

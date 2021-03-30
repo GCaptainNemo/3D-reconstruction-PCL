@@ -11,7 +11,7 @@
 #include <string>
 
 using namespace pcl;
-#define M_PI 3.1415926535
+#define PI 3.1415926535
 
 
 
@@ -53,11 +53,11 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 		pcl::PolygonMesh mesh;
 		if (strcmp(option, "poisson") == 0) {
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+			pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0) {
 			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
 		}
-		pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
 		// 显示网格化结果
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
@@ -79,7 +79,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 	const std::string dir = "./output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 5);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -93,7 +93,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
 	}
 
-	// 直接显示真彩色点云(不网格化)
+	// show colored point cloud(use point-image mapping)
 	lvx_obj.project_get_rgb();
 	if (strcmp(option, "pc")==0)
 	{
@@ -117,7 +117,7 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		//meshing based on range image
 		pcl::PolygonMesh mesh;
 		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
-		//pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+		pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
 		// viewer
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
@@ -145,17 +145,20 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		pcl::PolygonMesh mesh;
 		if (strcmp(option, "poisson") == 0) {
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0) {
 			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
 		}
-		pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
 		// 显示网格化结果
+		
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
 		viewer->addPolygonMesh(mesh, "mesh");
 		if (strcmp(option, "poisson") == 0) 
 		{
+			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);
+			//viewer->addPointCloud(lvx_obj.points_xyzrgb, rgb, "sample cloud");
 			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
 			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
 		}
@@ -181,7 +184,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "poisson");
+	dealwith_lvx(false, "greedy");
 	return 0;
 }
 

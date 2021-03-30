@@ -2,6 +2,11 @@
 
 #include <pcl/range_image/range_image.h>
 #include <pcl/range_image/range_image_planar.h>
+#include <pcl/surface/on_nurbs/fitting_surface_tdm.h>
+#include <pcl/surface/on_nurbs/fitting_curve_2d_asdm.h>
+#include <pcl/surface/on_nurbs/triangulation.h>
+#include <pcl/visualization/cloud_viewer.h>
+
 #include <pcl/point_types.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
@@ -14,6 +19,8 @@
 //[2]将点云法向信息叠加在原点云上，生成pcl::PointXYZRGBNormal格式的点云
 //[3]使用泊松重建（poisson reconstruction）建立无颜色mesh。
 //[4]使用kdtree将原点云的信息映射在无颜色mesh上，并生成彩色mesh。
+
+typedef pcl::PointXYZ Point;
 
 class pc_operator
 {
@@ -54,14 +61,18 @@ public:
 
 	static void range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr);
 
- //  /*pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
-	//pcl::PointCloud<PointT>::Ptr cloud_downSampled(new pcl::PointCloud<PointT>);
-	//pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-	//pcl::PointCloud<PointT>::Ptr cloud_smoothed(new pcl::PointCloud<PointT>);*/
-	//
+	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
+
+	/*static void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);
 	
+	static void PointCloud2Vector3d(pcl::PointCloud<Point>::Ptr cloud, pcl::on_nurbs::vector_vec3d &data);
+*/
 	
 };
+
+void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);
+void PointCloud2Vector3d(pcl::PointCloud<Point>::Ptr cloud, pcl::on_nurbs::vector_vec3d &data);
+
 
 
 

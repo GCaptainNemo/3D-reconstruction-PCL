@@ -3,6 +3,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/range_image_visualizer.h>
 #include <pcl/visualization/common/float_image_utils.h>
+
 #include "kitti_io_obj.h"
 #include "pc_operator.h"
 #include "lvx_io_obj.h"
@@ -11,6 +12,8 @@
 
 using namespace pcl;
 #define M_PI 3.1415926535
+
+
 
 void dealwith_kitti(const bool &preprocess, const char * option) 
 {
@@ -69,13 +72,14 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 	}
 	//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
 }
+
 void dealwith_lvx(const bool &preprocess, const char * option)
 {
 	LvxObj lvx_obj;
 	const std::string dir = "./output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 200);
+	lvx_obj.read_pcds_xyz(dir, true, 5);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -113,6 +117,8 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		//meshing based on range image
 		pcl::PolygonMesh mesh;
 		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
+		//pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+
 		// viewer
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
 		viewer->setBackgroundColor(0., 0., 0.);
@@ -127,9 +133,8 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 	}
 	else if(strcmp(option, "bspline")==0)
 	{
-	// 用基于B样条进行表面重建
-
-
+		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
+		pc_operator::bspline_reconstruction(lvx_obj.points_xyz);
 	}
 	else {
 		// 用点云meshing(贪婪投影三角形和poisson重建)
@@ -158,8 +163,9 @@ void dealwith_lvx(const bool &preprocess, const char * option)
 		}
 		std::cout << "success" << std::endl;
 	}
-	
 }
+
+
 
 int main()
 {
@@ -169,7 +175,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	dealwith_lvx(false, "rangeImage");
+	dealwith_lvx(false, "bspline");
 	return 0;
 }
 

@@ -76,9 +76,9 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 void dealwith_lvx(const bool &preprocess, const char * option, const bool & save)
 {
 	LvxObj lvx_obj;
-	const std::string dir = "./output";
+	const std::string dir = "../output";
 	lvx_obj.set_calib();
-	lvx_obj.read_image("../resources/livox_hikvision/test.png", true);
+	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
 	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;

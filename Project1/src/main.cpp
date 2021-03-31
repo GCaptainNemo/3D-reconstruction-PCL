@@ -102,7 +102,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		while (!viewer.wasStopped())
 		{
 		}
-		if (save) { pcl::io::savePCDFile("./linshi/color_pc.pcd", *lvx_obj.points_xyzrgb); }
+		if (save) { pcl::io::savePCDFile("../linshi/color_pc.pcd", *lvx_obj.points_xyzrgb); }
 	}
 	else if (strcmp(option, "rangeImage") == 0) 
 	{
@@ -130,7 +130,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			Sleep(0.01);
 			viewer->spinOnce();
 		}
-		if (save){pcl::io::savePLYFileBinary("./linshi/mesh_rangeimage.ply", mesh);}
+		if (save){pcl::io::savePLYFileBinary("../linshi/mesh_rangeimage.ply", mesh);}
 	}
 	else if(strcmp(option, "bspline")==0)
 	{
@@ -147,12 +147,12 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		if (strcmp(option, "poisson") == 0) {
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
 			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
-			if (save) { pcl::io::savePLYFileBinary("./linshi/poisson_mesh.ply", mesh); }
+			if (save) { pcl::io::savePLYFileBinary("../linshi/poisson_mesh.ply", mesh); }
 
 		}
 		else if (strcmp(option, "greedy") == 0) {
 			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
-			if (save) { pcl::io::savePLYFileBinary("./linshi/greedy_mesh.ply", mesh); }
+			if (save) { pcl::io::savePLYFileBinary("../linshi/greedy_mesh.ply", mesh); }
 		}
 		// 显示网格化结果
 		

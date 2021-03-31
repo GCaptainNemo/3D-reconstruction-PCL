@@ -231,6 +231,23 @@ void pc_operator::color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointX
 	printf("finish color mesh!\n");
 }
 
+void pc_operator::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr &texturemesh) 
+{
+	texturemesh->cloud = mesh.cloud;
+	texturemesh->header = mesh.header;
+	texturemesh->tex_polygons.push_back(mesh.polygons);
+	std::vector< Eigen::Vector2f > texcoord;
+	texcoord.push_back(Eigen::Vector2f(0.0, 0.0));
+	texcoord.push_back(Eigen::Vector2f(1.0, 0.0));
+	texcoord.push_back(Eigen::Vector2f(1.0, 1.0));
+	texcoord.push_back(Eigen::Vector2f(0.0, 1.0));
+	//texturemesh->tex_coordinates.push_back(texcoord);
+	pcl::TexMaterial tex_material;
+	tex_material.tex_file = std::string("F:\\Develop\\examples\\111.jpg");
+	tex_material.tex_name = std::string("111.jpg");
+	texturemesh->tex_materials.push_back(tex_material);
+};
+
 void pc_operator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)
 {
 	//noiseLevel设置周围点对当前点深度值的影响：

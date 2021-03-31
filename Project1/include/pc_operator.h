@@ -7,6 +7,7 @@
 #include <pcl/surface/on_nurbs/triangulation.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/point_types.h>
+#include <pcl/surface/texture_mapping.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 
@@ -56,14 +57,17 @@ public:
 	static void poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 		pcl::PolygonMesh &mesh);
 
-	static void color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
-
 	static void pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb);
 
 	static void range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr);
 
 	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
 	
+	// color mesh algorithm
+	static void color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+	
+	static void texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr &texturemesh);
+
 };
 
 void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);

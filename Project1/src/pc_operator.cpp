@@ -13,6 +13,7 @@
 #include <pcl/surface/impl/organized_fast_mesh.hpp> 
 #include <pcl/surface/organized_fast_mesh.h>
 #include <pcl/io/png_io.h>
+
 #define PI 3.1415926535
 
 void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
@@ -161,6 +162,10 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_n
 	std::cout << "三角形数：" <<triangles.polygons.size() << std::endl;
 }
 
+void pc_operator::decimateMesh() 
+{
+	
+}
 
 void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 	pcl::PolygonMesh & mesh) 
@@ -231,21 +236,81 @@ void pc_operator::color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointX
 	printf("finish color mesh!\n");
 }
 
-void pc_operator::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr &texturemesh) 
+void pc_operator::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texture_mesh, cv::Mat &transform_matrix, cv::Mat &image)
 {
-	texturemesh->cloud = mesh.cloud;
-	texturemesh->header = mesh.header;
-	texturemesh->tex_polygons.push_back(mesh.polygons);
-	std::vector< Eigen::Vector2f > texcoord;
-	texcoord.push_back(Eigen::Vector2f(0.0, 0.0));
-	texcoord.push_back(Eigen::Vector2f(1.0, 0.0));
-	texcoord.push_back(Eigen::Vector2f(1.0, 1.0));
-	texcoord.push_back(Eigen::Vector2f(0.0, 1.0));
-	//texturemesh->tex_coordinates.push_back(texcoord);
-	pcl::TexMaterial tex_material;
-	tex_material.tex_file = std::string("F:\\Develop\\examples\\111.jpg");
-	tex_material.tex_name = std::string("111.jpg");
-	texturemesh->tex_materials.push_back(tex_material);
+	int row_bound = image.rows;
+	int column_bound = image.cols;
+
+	// loadMesh
+	texture_mesh->cloud = mesh.cloud;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr meshCloud(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::fromPCLPointCloud2(mesh.cloud, *meshCloud);
+	texture_mesh->header = mesh.header;
+	texture_mesh->tex_polygons.push_back(mesh.polygons);
+	// Used to replace texture coordinates in mesh_.
+	//std::vector<Eigen::Vector2f> textureCoordinatesVector;
+	std::vector<std::vector<Eigen::Vector2f> > textureCoordinatesVector;
+	std::cout << "face number = " << texture_mesh->tex_polygons[0].size();
+	for (size_t faceIndex = 0; faceIndex < texture_mesh->tex_polygons[0].size(); ++faceIndex)
+	{
+		std::cout << "faceIndex";
+		for (int i = 0; i < 3; ++i) 
+		{
+
+			pcl::PointXYZ point = meshCloud->points[texture_mesh->tex_polygons[0][faceIndex].vertices[i]];
+			double a_[4] = { point.x, point.y, point.z, 1.0 };
+			cv::Mat pos(4, 1, CV_64F, a_);
+			cv::Mat newpos(transform_matrix * pos);
+			float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
+			float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
+			std::cout << "i = " << i;
+			Eigen::Vector2f  uv;
+			uv(0) = x / (float)column_bound;
+			uv(1) = 1 - y / (float)row_bound;
+			if (uv(0) < 0) {
+				uv(0) = 0;
+			}
+			else if (uv(0) > 1) {
+				uv(0) = 1;
+			}
+			if (uv(1) < 0) {
+				uv(1) = 0;
+			}
+			else if (uv(1) > 1) {
+				uv(1) = 1;
+			}
+			// Add uv coordinates to submesh
+			// textureCoordinatesVector[0].push_back(uv);
+			texture_mesh->tex_coordinates[0].push_back(uv);
+		}
+
+	}
+	pcl::TexMaterial tex_material2;
+	tex_material2.tex_file = std::string("..\\..\\resources\\livox_hikvision\\test.png");
+	tex_material2.tex_name = std::string("test");
+	texture_mesh->tex_materials.push_back(tex_material2);
+
+	//pcl::visualization::PCLVisualizer* viewer; // 显示PolygonMesh代码
+	//viewer->addTextureMesh(*texture_mesh);
+	//
+
+
+
+	//texture_mesh->tex_coordinates.push_back(textureCoordinatesVector) ;
+	/*texture_mesh->tex_coordinates.clear();
+	texture_mesh->tex_coordinates = textureCoordinatesVector;
+*/
+
+	//std::vector< Eigen::Vector2f > texcoord;
+	//texcoord.push_back(Eigen::Vector2f(0.0, 0.0));
+	//texcoord.push_back(Eigen::Vector2f(1.0, 0.0));
+	//texcoord.push_back(Eigen::Vector2f(1.0, 1.0));
+	//texcoord.push_back(Eigen::Vector2f(0.0, 1.0));
+	////texture_mesh->tex_coordinates.push_back(texcoord);
+	//pcl::TexMaterial tex_material;
+	//tex_material.tex_file = std::string("F:\\Develop\\examples\\111.jpg");
+	//tex_material.tex_name = std::string("111.jpg");
+	//texture_mesh->tex_materials.push_back(tex_material);
 };
 
 void pc_operator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)

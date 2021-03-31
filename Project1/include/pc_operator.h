@@ -10,6 +10,8 @@
 #include <pcl/surface/texture_mapping.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp> 
 
 // typedef pcl::PointXYZ PointT;
 
@@ -54,6 +56,12 @@ public:
 	static void triangular(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals, 
 		pcl::PolygonMesh &triangles);
 	
+	/*!
+	* \brief decimateMesh  Performs post-processing on the form of quadric decimation to generate a mesh
+	*                      that has a higher density in areas with a lot of structure.
+	*/
+	static void decimateMesh();
+
 	static void poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 		pcl::PolygonMesh &mesh);
 
@@ -66,8 +74,12 @@ public:
 	// color mesh algorithm
 	static void color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
 	
-	static void texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr &texturemesh);
-
+	static void texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texturemesh, cv::Mat &transform_matrix, cv::Mat &image);
+	
+	/*!
+	 * \brief loadCamera       Loads camera with corresponding image.
+	 */
+	static void loadCamera();
 };
 
 void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);

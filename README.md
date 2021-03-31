@@ -25,7 +25,7 @@ PCL1.8.1 + OpenCV + PythonLibs
 ### 4.1 Poisson重建和样条重建
 Poisson重建和样条重建都利用了流形假设，使用曲面拟合点云。这种方法对watertight物体、满足流形假设(平滑)的物体比较适用，对于需要刻画尖锐特征的三维重建不太适合。
 
-与其它基于插值的方法相比，Poisson重建和样条重建的优点在于输出的网格占用空间要小得多。此外Poisson重建与样条重建相比要更快，很多offline的3D建模软件(比如OpenDroneMap)都会选择Poisson重建算法。
+与其它基于插值的方法相比，Poisson重建和样条重建的优点在于输出的网格占用空间要小得多。此外Poisson重建与样条重建相比要更快，很多offline的3D建模软件(比如[OpenDroneMap](https://github.com/geraldmwangi/OpenDroneMap) )都会选择Poisson重建算法。
 
 
 #### 1. 泊松重建

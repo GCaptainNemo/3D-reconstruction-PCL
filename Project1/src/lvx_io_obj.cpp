@@ -113,7 +113,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			// project each point to get color(low resolution) 
 			texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
-			//pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
+			//pc_operator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }
 		}
 		else if (strcmp(option, "greedy") == 0)

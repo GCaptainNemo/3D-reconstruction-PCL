@@ -1,5 +1,119 @@
 #include "../include/texturing.h"
 
+texturing::texturing() 
+{
+	this->texture_mesh_ = pcl::TextureMeshPtr(new pcl::TextureMesh);
+}
+
+texturing::~texturing() 
+{
+}
+
+void texturing::loadMesh(pcl::PolygonMeshPtr mesh)
+{
+	mesh->cloud = this->texture_mesh_->cloud;
+	std::vector<pcl::Vertices> polygons;
+	
+	// Push faces from ply-mesh into TextureMesh
+	polygons.resize(mesh->polygons.size());
+	for (size_t i = 0; i < mesh->polygons.size(); ++i)
+	{
+		polygons[i] = mesh->polygons[i];
+	}
+	texture_mesh_->tex_polygons.push_back(polygons);
+};
+void texturing::loadCamera()
+{
+	std::ifstream bundleFile;
+	std::string bundlePath = "../calib_par/bundle.rd.out";
+	bundleFile.open(bundlePath.c_str(), std::ios_base::binary);
+	// Check if file is open
+	if (!bundleFile.is_open())
+	{
+		std::cout << "can't open .out file" << std::endl;
+		return;
+	}
+	
+	// A temporary storage for a line from the file.
+	std::string dummyLine = "";
+	std::getline(bundleFile, dummyLine);
+
+	int nrCameras = 0;
+	bundleFile >> nrCameras;
+	bundleFile >> dummyLine;
+	for (int i = 0; i < nrCameras; ++i)
+	{
+		double val;
+		pcl::TextureMapping<pcl::PointXYZ>::Camera cam;
+		Eigen::Affine3f transform;
+		bundleFile >> val; //Read focal length from bundle file
+		cam.focal_length = val;
+		bundleFile >> val; //Read k1 from bundle file
+		bundleFile >> val; //Read k2 from bundle file
+
+		bundleFile >> val; transform(0, 0) = val; // Read rotation (0,0) from bundle file
+		bundleFile >> val; transform(0, 1) = val; // Read rotation (0,1) from bundle file
+		bundleFile >> val; transform(0, 2) = val; // Read rotation (0,2) from bundle file
+
+		bundleFile >> val; transform(1, 0) = val; // Read rotation (1,0) from bundle file
+		bundleFile >> val; transform(1, 1) = val; // Read rotation (1,1) from bundle file
+		bundleFile >> val; transform(1, 2) = val; // Read rotation (1,2) from bundle file
+
+		bundleFile >> val; transform(2, 0) = val; // Read rotation (2,0) from bundle file
+		bundleFile >> val; transform(2, 1) = val; // Read rotation (2,1) from bundle file
+		bundleFile >> val; transform(2, 2) = val; // Read rotation (2,2) from bundle file
+
+		bundleFile >> val; transform(0, 3) = val; // Read translation (0,3) from bundle file
+		bundleFile >> val; transform(1, 3) = val; // Read translation (1,3) from bundle file
+		bundleFile >> val; transform(2, 3) = val; // Read translation (2,3) from bundle file
+
+		transform(3, 0) = 0.0;
+		transform(3, 1) = 0.0;
+		transform(3, 2) = 0.0;
+		transform(3, 3) = 1.0;
+
+		transform = transform.inverse();
+
+		// Column negation
+		transform(0, 2) = -1.0*transform(0, 2);
+		transform(1, 2) = -1.0*transform(1, 2);
+		transform(2, 2) = -1.0*transform(2, 2);
+
+		transform(0, 1) = -1.0*transform(0, 1);
+		transform(1, 1) = -1.0*transform(1, 1);
+		transform(2, 1) = -1.0*transform(2, 1);
+
+		// Set values from bundle to current camera
+		cam.pose = transform;
+
+		cam.texture_file = "../../resources/livox_hikvision/test.png";
+		
+
+		// Read image to get full resolution size
+		cv::Mat image = cv::imread(cam.texture_file);
+
+		double imageWidth = static_cast<double>(image.cols);
+		double textureWithWidth = static_cast<double>(2000.0);
+
+		// Calculate scale factor to texture with textureWithSize
+		double factor = textureWithWidth / imageWidth;
+		if (factor > 1.0f)
+		{
+			factor = 1.0f;
+		}
+
+		// Update camera size and focal length
+		cam.height = static_cast<int>(std::floor(factor*(static_cast<double>(image.rows))));
+		cam.width = static_cast<int>(std::floor(factor*(static_cast<double>(image.cols))));
+		cam.focal_length *= static_cast<double>(cam.width) / 1200.0;
+		
+		// Add camera
+		cameras_.push_back(cam);
+
+	}
+
+}
+
 void texturing::color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
 {
 	// 用cloud给mesh染色
@@ -102,14 +216,14 @@ void texturing::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texture
 	texture_mesh->tex_materials.push_back(tex_material2);
 
 	//pcl::visualization::PCLVisualizer* viewer; // 显示PolygonMesh代码
-	//viewer->addTextureMesh(*texture_mesh);
+	//viewer->addTextureMesh(*texture_mesh_);
 	//
 
 
 
-	//texture_mesh->tex_coordinates.push_back(textureCoordinatesVector) ;
-	/*texture_mesh->tex_coordinates.clear();
-	texture_mesh->tex_coordinates = textureCoordinatesVector;
+	//texture_mesh_->tex_coordinates.push_back(textureCoordinatesVector) ;
+	/*texture_mesh_->tex_coordinates.clear();
+	texture_mesh_->tex_coordinates = textureCoordinatesVector;
 */
 
 //std::vector< Eigen::Vector2f > texcoord;
@@ -117,11 +231,11 @@ void texturing::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texture
 //texcoord.push_back(Eigen::Vector2f(1.0, 0.0));
 //texcoord.push_back(Eigen::Vector2f(1.0, 1.0));
 //texcoord.push_back(Eigen::Vector2f(0.0, 1.0));
-////texture_mesh->tex_coordinates.push_back(texcoord);
+////texture_mesh_->tex_coordinates.push_back(texcoord);
 //pcl::TexMaterial tex_material;
 //tex_material.tex_file = std::string("F:\\Develop\\examples\\111.jpg");
 //tex_material.tex_name = std::string("111.jpg");
-//texture_mesh->tex_materials.push_back(tex_material);
+//texture_mesh_->tex_materials.push_back(tex_material);
 };
 
 

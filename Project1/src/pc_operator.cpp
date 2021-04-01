@@ -19,7 +19,7 @@
 void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
 {
-	// 下采样
+	// voxel -base downsample
 	pcl::VoxelGrid<pcl::PointXYZ> downSampled;  //创建滤波对象
 	downSampled.setInputCloud(cloud);            //设置需要过滤的点云给滤波对象
 	downSampled.setLeafSize(voxel_size, voxel_size, voxel_size);  //设置滤波时创建的体素体积为1cm的立方体
@@ -94,17 +94,26 @@ void pc_operator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
 void pc_operator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints) 
 {
-	// 法线估计
-	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;             //创建法线估计的对象
-	normalEstimation.setInputCloud(cloud);                         //输入点云
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);// 创建用于最近邻搜索的KD-Tree
+	// create normal estimation object
+	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
+
+	// set input point cloud
+	normalEstimation.setInputCloud(cloud);                         
+	
+	// set kd-tree object
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+	
+	// set search method
 	normalEstimation.setSearchMethod(tree);
-	// pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>); // 定义输出的点云法线
-	// K近邻确定方法，使用k个最近点，或者确定一个以r为半径的圆内的点集来确定都可以，两者选1即可
-	normalEstimation.setKSearch(nPoints);               // 使用当前点周围最近的10个点
-	//normalEstimation.setRadiusSearch(0.1);            //对于每一个点都用半径为10cm的近邻搜索方式
-	normalEstimation.compute(*normals);               //计算法线
-	// 输出法线
+	
+	// Knn search
+	normalEstimation.setKSearch(nPoints);               
+	
+	// radius search 
+	//normalEstimation.setRadiusSearch(0.1);            
+
+	// calculate normal
+	normalEstimation.compute(*normals);               
 	std::cout << "normals: " << normals->size() << ", " << "normals fields: " << pcl::getFieldsList(*normals) << std::endl;
 }
 
@@ -112,54 +121,45 @@ void pc_operator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals, 
 	pcl::PolygonMesh &triangles)
 {
-	pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
-	tree2->setInputCloud(cloud_with_normals);
+	// Set kd-tree
+	pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr ke_tree(new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
+	ke_tree->setInputCloud(cloud_with_normals);
 
-	// 三角化
-	pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal> gp3;   // 定义三角化对象
+	// Greedy projection triangulation object
+	pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal> gp3;   
 	
-	// 设置三角化参数
-	gp3.setSearchRadius(1);  //设置搜索时KNN的球半径
-	gp3.setMu(2.5);  //设置样本点搜索其近邻点的最远距离为2.5倍（典型值2.5-3），这样使得算法自适应点云密度的变化
-	gp3.setMaximumNearestNeighbors(200);    //设置样本点最多可搜索的邻域个数，典型值是50-100
-
-	gp3.setMinimumAngle(PI / 36); // 设置三角化后三角形内角最小角度为5°
-	gp3.setMaximumAngle(2 * PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
-
-	gp3.setMaximumSurfaceAngle(PI / 4); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
-	gp3.setNormalConsistency(false);  //设置该参数为true保证法线朝向一致，设置为false的话不会进行法线一致性检查
-
-	gp3.setInputCloud(cloud_with_normals);     //设置输入点云为有向点云
-	gp3.setSearchMethod(tree2);   //设置搜索方式
-	gp3.reconstruct(triangles);  //重建提取三角化
-
+	// set parameters
+	// Knn search radius
+	gp3.setSearchRadius(1); 
 	
-}
+	//  Set the maximum distance of the sample point to search its nearest neighbor to be 2.5 times (typical value 2.5-3), 
+	// so that the algorithm can adapt to the change of point cloud density
+	gp3.setMu(2.5);  
 
-void pc_operator::triangular(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals, pcl::PolygonMesh &triangles)
-{
-	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
-	tree2->setInputCloud(cloud_with_normals);
+	// maximum num nearest neighbour to search
+	gp3.setMaximumNearestNeighbors(200);    
 
-	// 三角化
-	pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;   // 定义三角化对象
+	// Set the minimum Angle of the triangulation triangle to 5°
+	gp3.setMinimumAngle(PI / 36); 
+	
+	// Maximum angle of the triangulation triangle is 120°
+	gp3.setMaximumAngle(2 * PI / 3); 
 
-	// 设置三角化参数
-	gp3.setSearchRadius(0.1);  //设置搜索时的半径，也就是KNN的球半径
-	gp3.setMu(2.5);  //设置样本点搜索其近邻点的最远距离为2.5倍（典型值2.5-3），这样使得算法自适应点云密度的变化
-	gp3.setMaximumNearestNeighbors(100);    //设置样本点最多可搜索的邻域个数，典型值是50-100
+	// Set the maximum Angle that the normal direction of a point deviates from the normal of the sample point by 45°. 
+	// If it exceeds, the point will not be considered during connection
+	gp3.setMaximumSurfaceAngle(PI / 4); 
 
-	gp3.setMinimumAngle(PI / 18); // 设置三角化后得到的三角形内角的最小的角度为10°
-	gp3.setMaximumAngle(2 * PI / 3); // 设置三角化后得到的三角形内角的最大角度为120°
+	// Set normal orientation consistency, if false will not check normal consistency
+	gp3.setNormalConsistency(false);  
 
-	gp3.setMaximumSurfaceAngle(PI / 4); // 设置某点法线方向偏离样本点法线的最大角度45°，如果超过，连接时不考虑该点
-	gp3.setNormalConsistency(false);  //设置该参数为true保证法线朝向一致，设置为false的话不会进行法线一致性检查
+	// Set input pointcloud
+	gp3.setInputCloud(cloud_with_normals);    
 
-	gp3.setInputCloud(cloud_with_normals);     //设置输入点云为有向点云
-	gp3.setSearchMethod(tree2);   //设置搜索方式
-	gp3.reconstruct(triangles);  //重建提取三角化
+	// Set search method:kd tree
+	gp3.setSearchMethod(ke_tree); 
 
-	std::cout << "三角形数：" <<triangles.polygons.size() << std::endl;
+	// reconstruct get mesh
+	gp3.reconstruct(triangles);  
 }
 
 void pc_operator::decimateMesh() 

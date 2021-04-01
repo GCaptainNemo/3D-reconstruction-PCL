@@ -1,11 +1,12 @@
-#include "../include/lvx_io_obj.h"
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/range_image_visualizer.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <Python.h>
 #include <pcl/io/pcd_io.h>
 #include <io.h>
-
+#include "../include/pc_operator.h"
+#include "../include/lvx_io_obj.h"
 
 LvxObj::LvxObj()
 {
@@ -15,6 +16,129 @@ LvxObj::LvxObj()
 	this->points_xyzrgb = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 	this->points_xyz = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 }
+
+void dealwith_lvx(const bool &preprocess, const char * option, const bool & save)
+{
+	// load photo as well as .pcd files.
+	LvxObj lvx_obj;
+	const std::string dir = "../output";
+	lvx_obj.set_calib();
+	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
+	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
+	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
+
+	// point cloud pre-processing include down sample, filter, and smoothing
+	if (preprocess) {
+		pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
+		pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
+		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.05); // 平滑
+		pc_operator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
+		pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
+	}
+
+	// get colored point cloud(use point-image mapping)
+	lvx_obj.project_get_rgb();
+	if (strcmp(option, "pc") == 0)
+	{
+
+		// show colored point cloud directly
+		pcl::visualization::CloudViewer viewer("Simple Cloud Viewer"); //创造一个显示窗口
+		viewer.showCloud(lvx_obj.points_xyzrgb);
+		while (!viewer.wasStopped())
+		{
+		}
+		if (save) { pcl::io::savePCDFile("../../linshi/color_pc.pcd", *lvx_obj.points_xyzrgb); }
+	}
+	else if (strcmp(option, "rangeImage") == 0)
+	{
+
+		//meshing based on range image
+		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
+		pcl::RangeImage& range_image = *range_image_ptr;
+
+		pc_operator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
+		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
+		range_image_widget.showRangeImage(range_image);
+		range_image_widget.setWindowTitle("RangeImage");
+
+		pcl::PolygonMesh mesh;
+		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
+		pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+
+		// visualize
+		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
+		viewer->setBackgroundColor(0., 0., 0.);
+		viewer->addPolygonMesh(mesh, "mesh");
+		viewer->addCoordinateSystem();
+		while (!range_image_widget.wasStopped() && !viewer->wasStopped())
+		{
+			range_image_widget.spinOnce();
+			Sleep(0.01);
+			viewer->spinOnce();
+		}
+		if (save) { pcl::io::savePLYFileBinary("../../linshi/mesh_rangeimage.ply", mesh); }
+	}
+	else if (strcmp(option, "bspline") == 0)
+	{
+		// B-spline meshing
+		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
+		pc_operator::bspline_reconstruction(lvx_obj.points_xyz);
+	}
+	else {
+		// greedy projection triangulation and poisson reconstrucion
+		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+
+		// estimate point cloud normal vector
+		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10);
+		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
+		pcl::PolygonMesh mesh;
+		pcl::TextureMeshPtr texture_mesh_ptr = pcl::TextureMeshPtr(new pcl::TextureMesh);
+
+		// poisson reconstrucion
+		if (strcmp(option, "poisson") == 0)
+		{
+			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+// 			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+			std::cout << 123 << std::endl;
+			pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
+			std::cout << 123 << std::endl;
+			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh.ply", mesh); }
+		}
+		else if (strcmp(option, "greedy") == 0)
+		{
+			// greedy projection triangulation
+			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
+			if (save) { pcl::io::savePLYFileBinary("../../linshi/greedy_mesh.ply", mesh); }
+		}
+
+		// visualize meshing result
+		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
+		viewer->setBackgroundColor(0, 0, 0);
+		if (strcmp(option, "poisson") == 0)
+		{
+			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);
+			//viewer->addPointCloud(lvx_obj.points_xyzrgb, rgb, "sample cloud");
+			viewer->addTextureMesh(*texture_mesh_ptr, "Texture mesh");
+			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
+			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
+		}
+		else {
+			viewer->addPolygonMesh(mesh, "mesh");
+		}
+
+		viewer->initCameraParameters();
+		viewer->addCoordinateSystem();
+		while (!viewer->wasStopped()) {
+			viewer->spinOnce(100);
+			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+		}
+		std::cout << "success" << std::endl;
+	}
+
+}
+
 
 void LvxObj::lvx2pcd(const char *filedir, const char *option)
 {

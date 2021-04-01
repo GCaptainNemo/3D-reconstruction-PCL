@@ -37,6 +37,7 @@ public:
 	cv::Mat image;
 
 };
+void dealwith_kitti(const bool &preprocess, const char * option);
 
 
 //#endif // _IO_OBJ_H_

@@ -3,7 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <pcl/io/io.h>
-#include <pcl/io/pcd_io.h>//pcd 读写类相关的头文件。
+#include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 
 class LvxObj 
@@ -67,5 +67,6 @@ public:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb;     /**< points xyz and rgb*/
 
 };
+void dealwith_lvx(const bool &preprocess, const char * option, const bool & save);
 
 

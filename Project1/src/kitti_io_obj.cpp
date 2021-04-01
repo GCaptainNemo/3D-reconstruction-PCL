@@ -12,7 +12,7 @@
 #include <opencv2/opencv.hpp>
 #include "../include/kitti_io_obj.h"
 #include "../include/utils.h"
-
+#include "../include/pc_operator.h"
 
 
 KittiObj::KittiObj() 
@@ -26,6 +26,78 @@ KittiObj::KittiObj()
 KittiObj::~KittiObj() {
 
 }
+
+void dealwith_kitti(const bool &preprocess, const char * option)
+{
+
+	// load image, calibration information and .bin file of Kitti dataset.
+	KittiObj kitti_obj;
+	kitti_obj.read_image("../resources/image/000000.png");
+	kitti_obj.read_calib("../resources/calib/000000.txt");
+	kitti_obj.read_bin_xyz("../resources/Lidar/000000.bin", true);
+	std::cout << "before filter size = " << kitti_obj.points_xyz->size() << std::endl;
+
+	// point cloud preprocessing
+	if (preprocess) {
+		pc_operator::down_sample(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.01);
+		pc_operator::statistical_filter(kitti_obj.points_xyz, kitti_obj.points_xyz, 50, 3.0);
+		// pcl::io::savePCDFile("/pcd", *cloud);
+		pc_operator::resampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.05); // Æ½»¬
+		pc_operator::upsampling(kitti_obj.points_xyz, kitti_obj.points_xyz);
+		pc_operator::random_sampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 60000);
+	}
+
+	// use transform matrix and image to cull point cloud and give each point color.
+	kitti_obj.project_get_rgb();
+	if (strcmp(option, "pc") == 0)
+	{
+
+		// show colored point cloud directly(without meshing)
+		pcl::visualization::CloudViewer viewer("Simple Cloud Viewer");
+		viewer.showCloud(kitti_obj.points_xyzrgb);
+		while (!viewer.wasStopped())
+		{
+		}
+	}
+	else {
+
+		// meshing greedy projection triangulation and poisson reconstrucion
+		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+
+		// estimate point cloud normal vector
+		pc_operator::estimate_normal(kitti_obj.points_xyz, normals, 10);
+		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+		pcl::concatenateFields(*(kitti_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
+		pcl::PolygonMesh mesh;
+		if (strcmp(option, "poisson") == 0)
+		{
+			// poisson reconstruction
+			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);
+
+			// use 1nn to give poisson mesh texture(based on point)
+			pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
+		}
+		else if (strcmp(option, "greedy") == 0)
+		{
+			// greedy projection triangulation
+			pc_operator::triangular(rgbcloud_with_normals, mesh);
+		}
+
+		// visualize meshing results
+		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
+		viewer->setBackgroundColor(0, 0, 0);
+		viewer->addPolygonMesh(mesh, "mesh");
+		viewer->initCameraParameters();
+		viewer->addCoordinateSystem();
+		while (!viewer->wasStopped()) {
+			viewer->spinOnce(100);
+			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+		}
+		std::cout << "success" << std::endl;
+	}
+	//pcl::io::savePLYFileBinary("D:/pg_cpp/3D-reconstruction-PCL/result/mesh.ply", mesh);
+}
+
 
 void KittiObj::bin2pcd2(const std::string & infile, const std::string & outfile)
 {

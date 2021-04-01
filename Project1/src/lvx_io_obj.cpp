@@ -9,6 +9,8 @@
 
 LvxObj::LvxObj()
 {
+
+	// initialize lvxobj
 	this->points_xyzi = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>);
 	this->points_xyzrgb = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 	this->points_xyz = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
@@ -18,45 +20,49 @@ void LvxObj::lvx2pcd(const char *filedir, const char *option)
 {
 	if (strcmp(option, "topcd") == 0) 
 	{
-		std::cout << "hello world\n";
-		Py_Initialize();   //初始化
+		// initialize python
+		Py_Initialize();  
 		if (!Py_IsInitialized()) {
 			std::cout << "python init fail" << std::endl;
 			return;
 		}
+
+		// append ./lvx_parser dir to python interpreter sys.path
 		PyRun_SimpleString("import sys");
 		PyRun_SimpleString("sys.path.append('./lvx_parser')");
 
-		std::cout << "finish1\n";
-
-		PyObject * pModule = PyImport_ImportModule("pylvx");//这里是要调用的文件名
-		if (pModule == NULL) {
+		// call python module pylvx
+		PyObject * pModule = PyImport_ImportModule("pylvx");
+		if (pModule == NULL) 
+		{
 			std::cout << "module not found" << std::endl;
 			return;
 		}
-		PyObject * pFunc = PyObject_GetAttrString(pModule, "topcds");//这里是要调用的函数名
-		if (!pFunc) {
+
+		// call function topcds in the module pylvx
+		PyObject * pFunc = PyObject_GetAttrString(pModule, "topcds");
+		if (!pFunc) 
+		{
 			std::cout << "get python function failed\n";
 			return;
 		}
-		std::cout << "finish2\n";
-
+		
+		// change .lvx to .pcd in output dir
 		PyObject *pArgs = PyTuple_New(2);
-		// 把test.lvx按帧输出pcd形式，在output文件夹中
-		PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", filedir)); // s代表创建python中str变量
+		PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", filedir));  // s represent python str variable
 		PyTuple_SetItem(pArgs, 1, Py_BuildValue("s", "output"));
-		PyEval_CallObject(pFunc, pArgs);		//调用函数
+		
+		// call function
+		PyEval_CallObject(pFunc, pArgs);	
 
-		// 清空PyObject 
+		// clear PyObject 
 		Py_DECREF(pModule);
 		Py_DECREF(pFunc);
 		Py_DECREF(pArgs);
 		Py_Finalize();
 	}
-	std::cout << "123\n";
 }
 
-//void openPCDfile(const std::string &file_dir, const bool &show)
 void LvxObj::openPCDfile(const char * file_dir, const bool &show)
 {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
@@ -75,54 +81,54 @@ void LvxObj::openPCDfile(const char * file_dir, const bool &show)
 
 void LvxObj::read_image(const char *filename, const bool & correct)
 {
-	
+	// load image
 	cv::Mat image_ = cv::imread(filename).clone();
 	if (correct) 
 	{
-		std::cout << "correct begin" << std::endl;
+		// use distortion parameters to correct image
 		cv::undistort(image_, this->image, this->intrinsic_matrix, this->dist_matrix);
-		std::cout << "correct end \n";
 	}
-	cv::namedWindow("测试opencv");
-	cv::imshow("测试opencv", this->image);
+	cv::namedWindow("test opencv");
+	cv::imshow("test opencv", this->image);
 	cv::waitKey(6000);
 }
 
 void LvxObj::set_calib() 
 {
-	double Extrin_matrix[4][4] = { 1.6036083208305518e-02, -7.1163875152638334e-03,
-		9.9984608868768832e-01, 5.0296302884817123e-02,
-		-9.9985571454334576e-01, 5.4894932912082917e-03,
-		1.6075308968138691e-02, -5.5230446159839630e-02,
-		-5.6030465241367899e-03, -9.9995961043041048e-01,
-		-7.0273307528522788e-03, 6.9595232605934143e-02, 
-		0., 0., 0., 1. };
+	// 5 distortion parameters
 	double dist[5] = { 4.9811000000000001e-02, -2.7529999999999998e-03,
 	   -2.2499999999999998e-03, 3.9249999999999997e-03, 0. };
 	cv::Mat dist_array(5, 1, CV_64F, dist);
 	this->dist_matrix = dist_array.clone();
 
-	cv::Mat ext_(4, 4, CV_64F, Extrin_matrix);
-	cv::Mat invRt = ext_(cv::Rect(0, 0, 3, 3));                       // Camera extrinsic rotation matrix (Invert from world extrinsic).
-	cv::Mat R = invRt.t();
-	cv::Mat invT = -R * ext_(cv::Rect(3, 0, 1, 3)); // Camera extrinsic translate matrix (Invert from world extrinsic).
-	//cv::Mat R = 
+	// camera intrinsic matrix
 	double Intrinsic[3][3] = { 1.6634617699999999e+03, 0., 9.7235897999999997e+02, 0.,
 	   1.6652231500000000e+03, 5.1716867000000002e+02, 0., 0., 1. };
 	cv::Mat Int(3, 3, CV_64F, Intrinsic);
-	cv::hconcat(R, invT, this->transform_matrix);
 	this->intrinsic_matrix = Int.clone();
-	this->transform_matrix = Int * this->transform_matrix;
-	for (int row = 0; row < 3; row++) {
-		for (int column = 0; column < 4; column++) {
-			std::cout << this->transform_matrix.at<double>(row, column) <<std::endl;
-		}
-	}
+
+	// camera extrinsic matrix:from global coordinate to local coordinate
+	double Extrin_matrix[4][4] = { 1.6036083208305518e-02, -7.1163875152638334e-03,
+	9.9984608868768832e-01, 5.0296302884817123e-02,
+	-9.9985571454334576e-01, 5.4894932912082917e-03,
+	1.6075308968138691e-02, -5.5230446159839630e-02,
+	-5.6030465241367899e-03, -9.9995961043041048e-01,
+	-7.0273307528522788e-03, 6.9595232605934143e-02,
+	0., 0., 0., 1. };
+	cv::Mat ext_(4, 4, CV_64F, Extrin_matrix);
+	cv::Mat invRt = ext_(cv::Rect(0, 0, 3, 3));
+	cv::Mat R = invRt.t();
+	cv::Mat invT = -R * ext_(cv::Rect(3, 0, 1, 3));
+	cv::hconcat(R, invT, this->extrinsic_matrix);
 	
+	// transform matrix: from global coordinate to image coordinate
+	this->transform_matrix = Int * this->extrinsic_matrix;
 }
 
 
-void LvxObj::project_get_rgb() {
+void LvxObj::project_get_rgb() 
+{
+	// according to transform matrix project point cloud to the image to get the color
 	int size = this->points_xyz->size();
 	std::cout << "need to be projected size = " << size << std::endl;
 	int row_bound = this->image.rows;
@@ -132,6 +138,7 @@ void LvxObj::project_get_rgb() {
 	linshi_xyz->clear();
 	for (int i = 0; i < size; i++)
 	{
+		// project get the photo coordinate
 		pcl::PointXYZRGB pointRGB;
 		pcl::PointXYZ point = this->points_xyz->points[i];
 		pointRGB.x = point.x;
@@ -143,11 +150,12 @@ void LvxObj::project_get_rgb() {
 		float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
 		float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
 
+		// Trims viewport according to image size
 		if (point.x >= 0)
 		{
 			if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
 			{
-				//  imread是BGR（BITMAP）
+				//  imread BGR（BITMAP）
 				int row = int(y);
 				int column = int(x);
 				pointRGB.r = this->image.at<cv::Vec3b>(row, column)[2];

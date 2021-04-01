@@ -24,17 +24,19 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	const std::string dir = "../output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 200);
+	lvx_obj.read_pcds_xyz(dir, true, 5);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
 	// point cloud pre-processing include down sample, filter, and smoothing
 	if (preprocess) {
-		pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
-		pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
-		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.05); // Æ½»¬
+		//pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
+		//pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
+		
+		// smoothing radius = 100mm
+		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.1); 
 		pc_operator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
-		pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
+		// pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
 	}
 
 	// get colored point cloud(use point-image mapping)
@@ -93,24 +95,31 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
-		pcl::PolygonMesh mesh;
+		
+		// mesh and texture_mesh_ptr
+		pcl::PolygonMeshPtr mesh = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
 		pcl::TextureMeshPtr texture_mesh_ptr = pcl::TextureMeshPtr(new pcl::TextureMesh);
 
 		// poisson reconstrucion
 		if (strcmp(option, "poisson") == 0)
 		{
+			// poisson reconstrucion
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
-// 			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
-			std::cout << 123 << std::endl;
-			pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
-			std::cout << 123 << std::endl;
-			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh.ply", mesh); }
+ 			
+			// mesh decimation
+			pc_operator::decimateMesh(0.8, mesh);
+
+			// project each point to get color(low resolution) 
+			pc_operator::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+			
+			//pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
+			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{
 			// greedy projection triangulation
-			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
-			if (save) { pcl::io::savePLYFileBinary("../../linshi/greedy_mesh.ply", mesh); }
+			pc_operator::triangular(rgbcloud_with_normals, *mesh);  // greedy projection triangulation
+			if (save) { pcl::io::savePLYFileBinary("../../linshi/greedy_mesh.ply", *mesh); }
 		}
 
 		// visualize meshing result
@@ -118,14 +127,15 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		viewer->setBackgroundColor(0, 0, 0);
 		if (strcmp(option, "poisson") == 0)
 		{
-			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);
-			//viewer->addPointCloud(lvx_obj.points_xyzrgb, rgb, "sample cloud");
-			viewer->addTextureMesh(*texture_mesh_ptr, "Texture mesh");
+			// pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);
+			// viewer->addPointCloud(lvx_obj.points_xyzrgb, rgb, "sample cloud");
+			// viewer->addTextureMesh(*texture_mesh_ptr, "Texture mesh");
+			viewer->addPolygonMesh(*mesh, "mesh");
 			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
 			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
 		}
 		else {
-			viewer->addPolygonMesh(mesh, "mesh");
+			viewer->addPolygonMesh(*mesh, "mesh");
 		}
 
 		viewer->initCameraParameters();
@@ -171,7 +181,7 @@ void LvxObj::lvx2pcd(const char *filedir, const char *option)
 			return;
 		}
 		
-		// change .lvx to .pcd in output dir
+		// change .lvx to .pcd in output dir(Unit m)
 		PyObject *pArgs = PyTuple_New(2);
 		PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", filedir));  // s represent python str variable
 		PyTuple_SetItem(pArgs, 1, Py_BuildValue("s", "output"));

@@ -68,25 +68,28 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 		pc_operator::estimate_normal(kitti_obj.points_xyz, normals, 10);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(kitti_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
-		pcl::PolygonMesh mesh;
+		pcl::PolygonMeshPtr mesh;
 		if (strcmp(option, "poisson") == 0)
 		{
 			// poisson reconstruction
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);
 
+			// mesh decimation
+			pc_operator::decimateMesh(0.8, mesh);
+
 			// use 1nn to give poisson mesh texture(based on point)
-			pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
+			pc_operator::color_mesh(*mesh, kitti_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{
 			// greedy projection triangulation
-			pc_operator::triangular(rgbcloud_with_normals, mesh);
+			pc_operator::triangular(rgbcloud_with_normals, *mesh);
 		}
 
 		// visualize meshing results
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
-		viewer->addPolygonMesh(mesh, "mesh");
+		viewer->addPolygonMesh(*mesh, "mesh");
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
 		while (!viewer->wasStopped()) {

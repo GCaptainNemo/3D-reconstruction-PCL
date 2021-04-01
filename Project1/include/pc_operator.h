@@ -13,14 +13,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp> 
 
-// typedef pcl::PointXYZ PointT;
-
-// 1. 下采样和滤波  2. 重采样平滑 3. 法线计算 4.将点云坐标、颜色合在一起 5. 曲面重建
-
-//[1]计算点云法向, 并将法向量指向内部
-//[2]将点云法向信息叠加在原点云上，生成pcl::PointXYZRGBNormal格式的点云
-//[3]使用泊松重建（poisson reconstruction）建立无颜色mesh。
-//[4]使用kdtree将原点云的信息映射在无颜色mesh上，并生成彩色mesh。
 
 typedef pcl::PointXYZ Point;
 
@@ -60,10 +52,10 @@ public:
 	* \brief decimateMesh  Performs post-processing on the form of quadric decimation to generate a mesh
 	*                      that has a higher density in areas with a lot of structure.
 	*/
-	static void decimateMesh();
+	static void decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh_);
 
 	static void poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
-		pcl::PolygonMesh &mesh);
+		pcl::PolygonMeshPtr mesh);
 
 	static void pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb);
 
@@ -71,6 +63,7 @@ public:
 
 	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
 	
+	// post-processing
 	// color mesh algorithm
 	static void color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
 	

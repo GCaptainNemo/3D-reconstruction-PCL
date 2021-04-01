@@ -12,6 +12,7 @@
 #include <pcl/surface/impl/organized_fast_mesh.hpp> 
 #include <pcl/surface/organized_fast_mesh.h>
 #include <pcl/io/png_io.h>
+#include <pcl/surface/vtk_smoothing/vtk_mesh_quadric_decimation.h>
 
 #define PI 3.1415926535
 
@@ -46,9 +47,9 @@ void pc_operator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	// set kd-tree
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree;
 	
-	// upsampling
+	// upsampling searchRadius = 0.1m
 	filter.setSearchMethod(kdtree);
-	filter.setSearchRadius(5);
+	filter.setSearchRadius(0.1);   
 	pcl::PointCloud<pcl::PointXYZ> filteredCloud;
 
 	// sample from local plane
@@ -148,8 +149,8 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_
 	pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal> gp3;   
 	
 	// set parameters
-	// Knn search radius
-	gp3.setSearchRadius(1); 
+	// Knn search radius£¨100mm£©
+	gp3.setSearchRadius(100); 
 	
 	//  Set the maximum distance of the sample point to search its nearest neighbor to be 2.5 times (typical value 2.5-3), 
 	// so that the algorithm can adapt to the change of point cloud density
@@ -181,13 +182,36 @@ void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_
 	gp3.reconstruct(triangles);  
 }
 
-void pc_operator::decimateMesh() 
+void pc_operator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh_)
 {
-	
+	if (reduction_factor <= 0 || reduction_factor > 1)
+	{
+		return;
+	}
+	else
+	{
+		std::cout << "before decimation mesh size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
+
+		// mesh decimator
+		pcl::MeshQuadricDecimationVTK decimator;
+		
+
+		std::cout << "1";
+		decimator.setInputMesh(mesh_);
+		
+		std::cout << "start reduce vertex counts\n";
+		// reduce vertex counts
+		decimator.setTargetReductionFactor(reduction_factor);
+		pcl::PolygonMeshPtr decimatedMesh_ = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
+		std::cout << "start reduce vertex counts\n";
+		decimator.process(*decimatedMesh_.get());
+		mesh_ = decimatedMesh_;
+		std::cout << "after decimation mesh size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
+	}
 }
 
 void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
-	pcl::PolygonMesh & mesh) 
+	pcl::PolygonMeshPtr mesh) 
 {
 	std::cout << "begin poisson reconstruction" << endl;
 	pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
@@ -196,12 +220,13 @@ void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>
 	poisson.setSolverDivide(6);
 	poisson.setIsoDivide(6);
 
-	poisson.setConfidence(false);
-	poisson.setManifold(false);
-	poisson.setOutputPolygons(false);
+	//poisson.setConfidence(false);
+	poisson.setManifold(true);
+	poisson.setSamplesPerNode(1);
+	//poisson.setOutputPolygons(false);
 
 	poisson.setInputCloud(rgb_cloud_with_normals);
-	poisson.reconstruct(mesh);
+	poisson.reconstruct(*mesh.get());
 
 	std::cout << "finish poisson reconstruction" << endl;
 }

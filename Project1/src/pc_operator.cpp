@@ -190,23 +190,24 @@ void pc_operator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPt
 	}
 	else
 	{
-		std::cout << "before decimation mesh size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
+		std::cout << "before decimation vertex size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
 
-		// mesh decimator
+		// mesh decimator reduce vertex counts
 		pcl::MeshQuadricDecimationVTK decimator;
 		
-
-		std::cout << "1";
 		decimator.setInputMesh(mesh_);
 		
 		std::cout << "start reduce vertex counts\n";
+		
 		// reduce vertex counts
 		decimator.setTargetReductionFactor(reduction_factor);
 		pcl::PolygonMeshPtr decimatedMesh_ = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
+		
 		std::cout << "start reduce vertex counts\n";
 		decimator.process(*decimatedMesh_.get());
+		
 		mesh_ = decimatedMesh_;
-		std::cout << "after decimation mesh size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
+		std::cout << "after decimation vertex size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
 	}
 }
 
@@ -216,11 +217,25 @@ void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>
 	std::cout << "begin poisson reconstruction" << endl;
 	pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
 	//poisson.setDegree(2);
-	poisson.setDepth(8);
-	poisson.setSolverDivide(6);
-	poisson.setIsoDivide(6);
+	
+	int nPoints = rgb_cloud_with_normals->size();
+	// Assume points are located (roughly) in a plane.
+	double squareSide = std::sqrt(double(nPoints));
 
-	//poisson.setConfidence(false);
+	// Calculate octree depth such that if points were equally distributed in
+	// a quadratic plane, there would be at least 1 point per octree node.
+	int depth = 0;
+	while (std::pow<double>(2, depth) < squareSide / 2)
+	{
+		depth++;
+	}
+	std::cout << "tree_depth = " << depth << std::endl;
+
+	poisson.setDepth(depth);
+	/*poisson.setSolverDivide(6);
+	poisson.setIsoDivide(6);*/
+
+	
 	poisson.setManifold(true);
 	poisson.setSamplesPerNode(1);
 	//poisson.setOutputPolygons(false);
@@ -228,7 +243,10 @@ void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>
 	poisson.setInputCloud(rgb_cloud_with_normals);
 	poisson.reconstruct(*mesh.get());
 
-	std::cout << "finish poisson reconstruction" << endl;
+	std::cout << "finish poisson reconstruction" << std::endl;
+	std::cout << "Vertex count:" << mesh->cloud.width << std::endl;
+	std::cout << "Triangle count:" << mesh->polygons.size() << std::endl;
+	
 }
 
 

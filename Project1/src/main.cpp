@@ -17,13 +17,14 @@ using namespace pcl;
 
 void dealwith_kitti(const bool &preprocess, const char * option) 
 {
+	// load image, calibration information and .bin file of Kitti dataset.
 	KittiObj kitti_obj;
 	kitti_obj.read_image("../resources/image/000000.png");
 	kitti_obj.read_calib("../resources/calib/000000.txt");
 	kitti_obj.read_bin_xyz("../resources/Lidar/000000.bin", true);
 	std::cout << "before filter size = " << kitti_obj.points_xyz->size() << std::endl;
 
-	// 点云预处理
+	// point cloud preprocessing
 	if (preprocess) {
 		pc_operator::down_sample(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.01);
 		pc_operator::statistical_filter(kitti_obj.points_xyz, kitti_obj.points_xyz, 50, 3.0);
@@ -33,32 +34,43 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 		pc_operator::random_sampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 60000);
 	}
 	
-	// 直接显示真彩色点云(不网格化)
+	// use transform matrix and image to cull point cloud and give each point color.
 	kitti_obj.project_get_rgb();
 	if(strcmp(option,"pc") == 0)
 	{
-		pcl::visualization::CloudViewer viewer("Simple Cloud Viewer"); //创造一个显示窗口
-		//viewer.showCloud(kitti_obj.points_xyzi);
+
+		// show colored point cloud directly(without meshing)
+		pcl::visualization::CloudViewer viewer("Simple Cloud Viewer"); 
 		viewer.showCloud(kitti_obj.points_xyzrgb);
 		while (!viewer.wasStopped())
 		{
 		}
 	}
 	else{
-		// 点云网格化(贪婪投影三角形 和 poisson重建都需要点云 + 点云法向量)
+
+		// meshing greedy projection triangulation and poisson reconstrucion
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-		pc_operator::estimate_normal(kitti_obj.points_xyz, normals, 10); // estimate point cloud normal vector
+
+		// estimate point cloud normal vector
+		pc_operator::estimate_normal(kitti_obj.points_xyz, normals, 10); 
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(kitti_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		pcl::PolygonMesh mesh;
-		if (strcmp(option, "poisson") == 0) {
-			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
-			// pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
+		if (strcmp(option, "poisson") == 0) 
+		{
+			// poisson reconstruction
+			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  
+
+			// use 1nn to give poisson mesh texture(based on point)
+			pc_operator::color_mesh(mesh, kitti_obj.points_xyzrgb);
 		}
-		else if (strcmp(option, "greedy") == 0) {
-			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
+		else if (strcmp(option, "greedy") == 0) 
+		{
+			// greedy projection triangulation
+			pc_operator::triangular(rgbcloud_with_normals, mesh);  
 		}
-		// 显示网格化结果
+
+		// visualize meshing results
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
 		viewer->addPolygonMesh(mesh, "mesh");
@@ -75,6 +87,7 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 
 void dealwith_lvx(const bool &preprocess, const char * option, const bool & save)
 {
+	// load photo as well as .pcd files.
 	LvxObj lvx_obj;
 	const std::string dir = "../output";
 	lvx_obj.set_calib();
@@ -83,7 +96,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
-	// 点云预处理
+	// point cloud pre-processing include down sample, filter, and smoothing
 	if (preprocess) {
 		pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
 		pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
@@ -92,12 +105,13 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
 	}
 
-	// show colored point cloud(use point-image mapping)
+	// get colored point cloud(use point-image mapping)
 	lvx_obj.project_get_rgb();
 	if (strcmp(option, "pc")==0)
 	{
+
+		// show colored point cloud directly
 		pcl::visualization::CloudViewer viewer("Simple Cloud Viewer"); //创造一个显示窗口
-		//viewer.showCloud(kitti_obj.points_xyzi);
 		viewer.showCloud(lvx_obj.points_xyzrgb);
 		while (!viewer.wasStopped())
 		{
@@ -106,20 +120,21 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	}
 	else if (strcmp(option, "rangeImage") == 0) 
 	{
+
+		//meshing based on range image
 		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
 		pcl::RangeImage& range_image = *range_image_ptr;
-		// pc2rangeImage 
+		
 		pc_operator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
 		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
 		range_image_widget.showRangeImage(range_image);
 		range_image_widget.setWindowTitle("RangeImage");
 		
-		//meshing based on range image
 		pcl::PolygonMesh mesh;
 		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
 		pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
-		// viewer
+		// visualize
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
 		viewer->setBackgroundColor(0., 0., 0.);
 		viewer->addPolygonMesh(mesh, "mesh");
@@ -134,37 +149,41 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	}
 	else if(strcmp(option, "bspline")==0)
 	{
+		// B-spline meshing
 		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
 		pc_operator::bspline_reconstruction(lvx_obj.points_xyz);
 	}
 	else {
-		// 用点云meshing(贪婪投影三角形和poisson重建)
+		// greedy projection triangulation and poisson reconstrucion
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10); // estimate point cloud normal vector
+
+		// estimate point cloud normal vector
+		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10); 
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		pcl::PolygonMesh mesh;
 		pcl::TextureMeshPtr texture_mesh_ptr = pcl::TextureMeshPtr(new pcl::TextureMesh);
 
-		if (strcmp(option, "poisson") == 0) {
+		// poisson reconstrucion
+		if (strcmp(option, "poisson") == 0) 
+		{
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
 // 			pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
 			std::cout << 123 << std::endl;
 			pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			std::cout << 123 << std::endl;
-
 			if (save) { pcl::io::savePLYFileBinary("../linshi/poisson_mesh.ply", mesh); }
-
 		}
-		else if (strcmp(option, "greedy") == 0) {
+		else if (strcmp(option, "greedy") == 0) 
+		{
+			// greedy projection triangulation
 			pc_operator::triangular(rgbcloud_with_normals, mesh);  // greedy projection triangulation
 			if (save) { pcl::io::savePLYFileBinary("../linshi/greedy_mesh.ply", mesh); }
 		}
-		// 显示网格化结果
-		
+
+		// visualize meshing result
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("mesh"));
 		viewer->setBackgroundColor(0, 0, 0);
-
 		if (strcmp(option, "poisson") == 0) 
 		{
 			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);

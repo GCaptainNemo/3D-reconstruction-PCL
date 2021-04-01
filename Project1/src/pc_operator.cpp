@@ -1,5 +1,4 @@
 #include "../include/pc_operator.h"
-
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
@@ -20,10 +19,16 @@ void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
 {
 	// voxel -base downsample
-	pcl::VoxelGrid<pcl::PointXYZ> downSampled;  //创建滤波对象
-	downSampled.setInputCloud(cloud);            //设置需要过滤的点云给滤波对象
-	downSampled.setLeafSize(voxel_size, voxel_size, voxel_size);  //设置滤波时创建的体素体积为1cm的立方体
-	downSampled.filter(*cloud_downSampled);           //执行滤波处理，存储输出
+	pcl::VoxelGrid<pcl::PointXYZ> downSampled;  
+
+	// set input cloud
+	downSampled.setInputCloud(cloud);            
+
+	// set voxel_size * voxel_size * voxel_size  voxel cube
+	downSampled.setLeafSize(voxel_size, voxel_size, voxel_size);  
+
+	// filter
+	downSampled.filter(*cloud_downSampled);          
 	std::cout << "downsampled point cloud = " << cloud_downSampled->size() << std::endl;
 }
 
@@ -31,31 +36,45 @@ void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 void pc_operator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_upsampled) 
 {
+	// set mls obj
 	pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ> filter;
+	
+	// set input cloud
 	filter.setInputCloud(cloud);
 	std::cout << "before filter pc = " << cloud->size() << std::endl;
-	pcl::PointCloud<pcl::PointXYZ> filteredCloud;    //输出MLS
+	
+	// set kd-tree
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree;
+	
+	// upsampling
 	filter.setSearchMethod(kdtree);
 	filter.setSearchRadius(5);
+	pcl::PointCloud<pcl::PointXYZ> filteredCloud;
+
+	// sample from local plane
 	filter.setUpsamplingMethod(pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointXYZ>::SAMPLE_LOCAL_PLANE);
 	filter.setUpsamplingRadius(0.05);
 	filter.setUpsamplingStepSize(0.01);
 	filter.process(filteredCloud);
 	std::cout << "upsampled point cloud = " << filteredCloud.size() << std::endl;
 	cloud_upsampled = filteredCloud.makeShared();
-
 }
 
 
 void pc_operator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number) 
 {
-	
+	// create random sample object
 	pcl::RandomSample<pcl::PointXYZ> rs;
-	rs.setInputCloud(cloud);	    	// 设置输出点的数量   
+	
+	// set input point cloud
+	rs.setInputCloud(cloud);
+
+	// set random sampling number
 	rs.setSample(number);
-	rs.filter(*cloud_randomsampled);  // 下采样并输出到cloud_out
+
+	// filter
+	rs.filter(*cloud_randomsampled);  
 	std::cout << "cloud_randomsampled = " << cloud_randomsampled->size() << std::endl;
 
 }
@@ -170,7 +189,6 @@ void pc_operator::decimateMesh()
 void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 	pcl::PolygonMesh & mesh) 
 {
-	// 注意PCL poisson重建表面得到的是没有颜色的mesh
 	std::cout << "begin poisson reconstruction" << endl;
 	pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
 	//poisson.setDegree(2);

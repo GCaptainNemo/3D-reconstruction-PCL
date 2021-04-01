@@ -65,20 +65,13 @@ public:
 
 	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
 	
-	// post-processing
-	// color mesh algorithm
-	static void color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
-	
-	static void texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texturemesh, cv::Mat &transform_matrix, cv::Mat &image);
-	
-	/*!
-	 * \brief loadCamera       Loads camera with corresponding image.
-	 */
-	static void loadCamera();
 };
 
 void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);
 void PointCloud2Vector3d(pcl::PointCloud<Point>::Ptr cloud, pcl::on_nurbs::vector_vec3d &data);
+
+
+
 
 
 

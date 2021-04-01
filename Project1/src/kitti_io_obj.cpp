@@ -13,7 +13,7 @@
 #include "../include/kitti_io_obj.h"
 #include "../include/utils.h"
 #include "../include/pc_operator.h"
-
+#include "../include/texturing.h"
 
 KittiObj::KittiObj() 
 {
@@ -78,7 +78,7 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 			pc_operator::decimateMesh(0.2, mesh);
 
 			// use 1nn to give poisson mesh texture(based on point)
-			pc_operator::color_mesh(*mesh, kitti_obj.points_xyzrgb);
+			texturing::color_mesh(*mesh, kitti_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{

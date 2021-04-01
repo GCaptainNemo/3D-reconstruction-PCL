@@ -26,6 +26,8 @@ ${PROJECT_SOURCE_DIR} src/lvx_io_obj.cpp
 ${PROJECT_SOURCE_DIR} src/main.cpp
 ${PROJECT_SOURCE_DIR} src/pc_operator.cpp 
 ${PROJECT_SOURCE_DIR} src/utils.cpp
+${PROJECT_SOURCE_DIR} src/texturing.cpp
+
 )
 
 add_executable(${PROJECT_NAME} ${SRC})

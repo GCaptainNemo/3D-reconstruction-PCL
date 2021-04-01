@@ -6,6 +6,7 @@
 #include <pcl/io/pcd_io.h>
 #include <io.h>
 #include "../include/pc_operator.h"
+#include "../include/texturing.h"
 #include "../include/lvx_io_obj.h"
 
 LvxObj::LvxObj()
@@ -66,7 +67,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 
 		pcl::PolygonMesh mesh;
 		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
-		pc_operator::color_mesh(mesh, lvx_obj.points_xyzrgb);
+		texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
 		// visualize
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
@@ -107,10 +108,10 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
  			
 			// mesh decimation
-			pc_operator::decimateMesh(0.8, mesh);
+			pc_operator::decimateMesh(0.2, mesh);
 
 			// project each point to get color(low resolution) 
-			pc_operator::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+			texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
 			//pc_operator::texture_mesh(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }

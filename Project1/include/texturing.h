@@ -67,6 +67,8 @@ public:
 	 */
 	static void Texturing::get_triangle_centroid(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, pcl::PointXY &circumcenter, double &radius);
 
+	static bool Texturing::checkPointInsideTriangle(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, const pcl::PointXY &pt);
+
 	
 public:
 	pcl::TextureMesh::Ptr texture_mesh_;            /**< Texture mesh to deal with. */

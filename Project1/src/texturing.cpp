@@ -165,11 +165,34 @@ bool Texturing::getPixelCoordinates(const pcl::PointXYZ &pt, const pcl::TextureM
 	return (false); // point was not visible by the camera
 };
 
+bool Texturing::check_point_in_triangle(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, const pcl::PointXY &pt)
+{
+	// Compute vectors
+	Eigen::Vector2d v0, v1, v2;
+	v0(0) = p3.x - p1.x; v0(1) = p3.y - p1.y; // v0= C - A
+	v1(0) = p2.x - p1.x; v1(1) = p2.y - p1.y; // v1= B - A
+	v2(0) = pt.x - p1.x; v2(1) = pt.y - p1.y; // v2= P - A
 
+	// Compute dot products
+	double dot00 = v0.dot(v0); // dot00 = dot(v0, v0)
+	double dot01 = v0.dot(v1); // dot01 = dot(v0, v1)
+	double dot02 = v0.dot(v2); // dot02 = dot(v0, v2)
+	double dot11 = v1.dot(v1); // dot11 = dot(v1, v1)
+	double dot12 = v1.dot(v2); // dot12 = dot(v1, v2)
+
+	// Compute barycentric coordinates
+	double invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
+	double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	// Check if point is in triangle
+	return ((u >= 0) && (v >= 0) && (u + v < 1));
+}
 
 void Texturing::mesh_image_match()
 {
-	// Resize the triangleToImageAssigmnent vector to match the number of faces in the mesh
+	// Frustrum culling + Occlusion culling
+
 	tTIA_.resize(texture_mesh_->tex_polygons[0].size());
 
 	// Set all values in the triangleToImageAssignment vector to a default value (-1) if there are no optimal camera
@@ -279,7 +302,7 @@ void Texturing::mesh_image_match()
 
 
 
-		// If any faces are visible in the current camera perform occlusion culling
+		// If any faces are visible in the current camera, perform occlusion culling
 		if (countInsideFrustum > 0)
 		{
 			// Set up acceleration structure
@@ -341,7 +364,7 @@ void Texturing::mesh_image_match()
 						normal.y = -(diff0.x * diff1.z - diff0.z * diff1.x);
 						normal.z = diff0.x * diff1.y - diff0.y * diff1.x;
 						double norm = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-						//Angle of face to camera
+						//Angle of face to camera£¨Camera coordinate system£©
 						double cos = normal.x / norm;
 
 						//Save distance of faceIndex to current camera
@@ -364,7 +387,7 @@ void Texturing::mesh_image_match()
 								// If the neighbor has a greater distance to the camera and is inside face polygon set it as not visible
 								if (distance < neighborDistance)
 								{
-									if (checkPointInsideTriangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
+									if (check_point_in_triangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
 									{
 										// Update visibility for neighbors
 										visibility[indexUvToPoints[neighbors[i]].idx_face] = false;
@@ -395,7 +418,7 @@ void Texturing::mesh_image_match()
 				}
 			}
 		}
-
+		std::cout << "count = " << count << std::endl;
 	}
 }
 

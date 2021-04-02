@@ -27,13 +27,14 @@ public:
 	/*!
 	 * \brief read_pcd_xyz    Read point cloud pcd file.
 	 * \param filename        File name.
-	 * \param iscrop          Argument crop or not.
+	 * \param iscrop          Frustrum culling or not.
 	 */
 	void read_pcd_xyz(const char *filename, const bool &iscrop);
 	
 	/*!
 	 * \brief read_pcds_xyz   Read point cloud pcd file from a dir.
 	 * \param dir             Folder name.
+	 * \param iscrop          Frustrum culling or not.
 	 * \param frame_num       Number of pcd file load in.
 	 */
 	void read_pcds_xyz(const std::string &dir, const bool &iscrop, const int & frame_num);

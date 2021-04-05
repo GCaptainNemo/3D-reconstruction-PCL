@@ -67,7 +67,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 
 		pcl::PolygonMesh mesh;
 		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
-		texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
+		Texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
 		// visualize
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
@@ -111,7 +111,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			pc_operator::decimateMesh(0.2, mesh);
 
 			// project each point to get color(low resolution) 
-			texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+			Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
 			//pc_operator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }

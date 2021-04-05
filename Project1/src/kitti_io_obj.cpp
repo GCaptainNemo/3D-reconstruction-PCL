@@ -78,7 +78,7 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 			pc_operator::decimateMesh(0.2, mesh);
 
 			// use 1nn to give poisson mesh texture(based on point)
-			texturing::color_mesh(*mesh, kitti_obj.points_xyzrgb);
+			Texturing::color_mesh(*mesh, kitti_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{

@@ -51,7 +51,7 @@ public:
 	 * \param p1, p2, p3              Triangular face's vertices.
 	 * \param proj1, proj2, proj3     Image coordinates.
 	 */
-	static bool Texturing::is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
+	static bool is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
 		pcl::PointXY &proj1, pcl::PointXY &proj2, pcl::PointXY &proj3);
 
 	/*!
@@ -65,9 +65,9 @@ public:
 	/*!
 	 * \brief get_triangle_centroid     Calculate circumscribed circle centroid and radius.
 	 */
-	static void Texturing::get_triangle_centroid(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, pcl::PointXY &circumcenter, double &radius);
+	static void get_triangle_centroid(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, pcl::PointXY &circumcenter, double &radius);
 
-	static bool Texturing::checkPointInsideTriangle(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, const pcl::PointXY &pt);
+	static bool check_point_in_triangle(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, const pcl::PointXY &pt);
 
 	
 public:

@@ -39,12 +39,12 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 
 	// point cloud preprocessing
 	if (preprocess) {
-		PcOperator::down_sample(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.01);
-		PcOperator::statistical_filter(kitti_obj.points_xyz, kitti_obj.points_xyz, 50, 3.0);
+		pc_operator::down_sample(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.01);
+		pc_operator::statistical_filter(kitti_obj.points_xyz, kitti_obj.points_xyz, 50, 3.0);
 		// pcl::io::savePCDFile("/pcd", *cloud);
-		PcOperator::resampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.05); // Æ½»¬
-		PcOperator::upsampling(kitti_obj.points_xyz, kitti_obj.points_xyz);
-		PcOperator::random_sampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 60000);
+		pc_operator::resampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 0.05); // Æ½»¬
+		pc_operator::upsampling(kitti_obj.points_xyz, kitti_obj.points_xyz);
+		pc_operator::random_sampling(kitti_obj.points_xyz, kitti_obj.points_xyz, 60000);
 	}
 
 	// use transform matrix and image to cull point cloud and give each point color.
@@ -65,25 +65,25 @@ void dealwith_kitti(const bool &preprocess, const char * option)
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 
 		// estimate point cloud normal vector
-		PcOperator::estimate_normal(kitti_obj.points_xyz, normals, 10);
+		pc_operator::estimate_normal(kitti_obj.points_xyz, normals, 10);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(kitti_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		pcl::PolygonMeshPtr mesh;
 		if (strcmp(option, "poisson") == 0)
 		{
 			// poisson reconstruction
-			PcOperator::poisson_reconstruction(rgbcloud_with_normals, mesh);
+			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);
 
 			// mesh decimation reduce 20% vertex
-			PcOperator::decimate_mesh(0.2, mesh);
+			pc_operator::decimateMesh(0.2, mesh);
 
 			// use 1nn to give poisson mesh texture(based on point)
-			Texturing::color_mesh(*mesh, kitti_obj.points_xyzrgb);
+			texturing::color_mesh(*mesh, kitti_obj.points_xyzrgb);
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{
 			// greedy projection triangulation
-			PcOperator::triangular(rgbcloud_with_normals, *mesh);
+			pc_operator::triangular(rgbcloud_with_normals, *mesh);
 		}
 
 		// visualize meshing results

@@ -16,7 +16,7 @@
 
 typedef pcl::PointXYZ Point;
 
-class PcOperator
+class pc_operator
 {
 public:
 
@@ -49,12 +49,12 @@ public:
 		pcl::PolygonMesh &triangles);
 	
 	/*!
-	* \brief decimate_mesh  Performs post-processing on the form of quadric decimation to generate a mesh
+	* \brief decimateMesh  Performs post-processing on the form of quadric decimation to generate a mesh
 	*                      that has a higher density in areas with a lot of structure.
 	* \param reduction_factor   Reduce vertices proportion    
 	* \param mesh_         Origin mesh
 	*/
-	static void decimate_mesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh);
+	static void decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh);
 
 	static void poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 		pcl::PolygonMeshPtr mesh);

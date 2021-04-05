@@ -16,7 +16,7 @@
 
 #define PI 3.1415926535
 
-void PcOperator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+void pc_operator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
 {
 	// voxel -base downsample
@@ -34,7 +34,7 @@ void PcOperator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 
-void PcOperator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+void pc_operator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_upsampled) 
 {
 	// set mls obj
@@ -62,7 +62,7 @@ void PcOperator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 
-void PcOperator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+void pc_operator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number) 
 {
 	// create random sample object
@@ -80,7 +80,7 @@ void PcOperator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 
 }
 
-void PcOperator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+void pc_operator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed, const float &searchRadius)
 {
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr treeSampling(new pcl::search::KdTree<pcl::PointXYZ>);// 创建用于最近邻搜索的KD-Tree
@@ -97,7 +97,7 @@ void PcOperator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	cloud_smoothed = mls_point.makeShared();
 	std::cout << "cloud_smoothed(resampled) =  " << cloud_smoothed->size() << std::endl;
 }
-void PcOperator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter,
+void pc_operator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter,
 	const int & neighbour, const float & proportion)
 {
 	pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
@@ -111,7 +111,7 @@ void PcOperator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, p
 
 
 
-void PcOperator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+void pc_operator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints) 
 {
 	// create normal estimation object
@@ -138,7 +138,7 @@ void PcOperator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 
-void PcOperator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals, 
+void pc_operator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals, 
 	pcl::PolygonMesh &triangles)
 {
 	// Set kd-tree
@@ -182,7 +182,7 @@ void PcOperator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_w
 	gp3.reconstruct(triangles);  
 }
 
-void PcOperator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh_)
+void pc_operator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh_)
 {
 	if (reduction_factor <= 0 || reduction_factor > 1)
 	{
@@ -212,7 +212,7 @@ void PcOperator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr
 	}
 }
 
-void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
+void pc_operator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 	pcl::PolygonMeshPtr mesh) 
 {
 	std::cout << "begin poisson reconstruction" << endl;
@@ -252,10 +252,10 @@ void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>:
 
 
 
-void PcOperator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)
+void pc_operator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)
 {
 	//noiseLevel设置周围点对当前点深度值的影响：
-	//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
+			//noiseLevel = 0.05，深度距离值是通过查询点半径为 Scm 的圆内包含的点用来平均计算而得到的。
 	float noise_level = 0.0;      //各种参数的设置
 	float min_range = 0.0f;
 	int border_size = 1;
@@ -285,7 +285,7 @@ void PcOperator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pc
 
 };
 
-void PcOperator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr)
+void pc_operator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr)
 {
 	pcl::OrganizedFastMesh<pcl::PointWithRange>::Ptr tri(new pcl::OrganizedFastMesh<pcl::PointWithRange>);
 	pcl::search::KdTree<pcl::PointWithRange>::Ptr tree(new pcl::search::KdTree<pcl::PointWithRange>);
@@ -299,7 +299,7 @@ void PcOperator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::sha
 };
 
 
-void PcOperator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud) 
+void pc_operator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud) 
 {
 	pcl::on_nurbs::NurbsDataSurface data;
 	PointCloud2Vector3d(object_cloud, data.interior);

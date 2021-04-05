@@ -26,23 +26,21 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
 	lvx_obj.read_pcds_xyz(dir, true, 5);
-	
-	
+	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
+
 	// point cloud pre-processing include down sample, filter, and smoothing
 	if (preprocess) {
+		//pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
+		//pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
 		
-		//PcOperator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
-		//PcOperator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
-		
-
-		// smoothing radius = 0.1m
-		PcOperator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.1); 
-		PcOperator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
-		// PcOperator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
+		// smoothing radius = 100mm
+		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.1); 
+		pc_operator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
+		// pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
 	}
 
-	// Get colored point cloud(use point-image mapping)
+	// get colored point cloud(use point-image mapping)
 	lvx_obj.project_get_rgb();
 	if (strcmp(option, "pc") == 0)
 	{
@@ -62,14 +60,14 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
 		pcl::RangeImage& range_image = *range_image_ptr;
 
-		PcOperator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
+		pc_operator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
 		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
 		range_image_widget.showRangeImage(range_image);
 		range_image_widget.setWindowTitle("RangeImage");
 
 		pcl::PolygonMesh mesh;
-		PcOperator::range_image_reconstruct(mesh, range_image_ptr);
-		Texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
+		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
+		texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
 		// visualize
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("RangeImage"));
@@ -88,14 +86,14 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	{
 		// B-spline meshing
 		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
-		PcOperator::bspline_reconstruction(lvx_obj.points_xyz);
+		pc_operator::bspline_reconstruction(lvx_obj.points_xyz);
 	}
 	else {
 		// greedy projection triangulation and poisson reconstrucion
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 
 		// estimate point cloud normal vector
-		PcOperator::estimate_normal(lvx_obj.points_xyz, normals, 10);
+		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		
@@ -107,21 +105,21 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		if (strcmp(option, "poisson") == 0)
 		{
 			// poisson reconstrucion
-			PcOperator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
  			
 			// mesh decimation
-			PcOperator::decimate_mesh(0.2, mesh);
+			pc_operator::decimateMesh(0.2, mesh);
 
 			// project each point to get color(low resolution) 
-			Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+			texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
-			//PcOperator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
+			//pc_operator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{
 			// greedy projection triangulation
-			PcOperator::triangular(rgbcloud_with_normals, *mesh);  // greedy projection triangulation
+			pc_operator::triangular(rgbcloud_with_normals, *mesh);  // greedy projection triangulation
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/greedy_mesh.ply", *mesh); }
 		}
 
@@ -287,7 +285,7 @@ void LvxObj::project_get_rgb()
 		float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
 		float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
 
-		// Frustum culling
+		// Trims viewport according to image size
 		if (point.x >= 0)
 		{
 			if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
@@ -318,13 +316,12 @@ void LvxObj::read_pcd_xyz(const char * filename, const bool &iscrop)
 	this->points_xyz->clear();
 	if (!iscrop) 
 	{
-		// Copy directly
 		pcl::copyPointCloud(*cloud, *(this->points_xyz));
 		return;
 	}
 	else
 	{
-		// Frustrum culling
+		// 根据transform-matrix裁剪一部分
 		int size = cloud->size();
 		std::cout << "cloud-size = " << size << std::endl;
 		int row_bound = this->image.rows;
@@ -350,10 +347,9 @@ void LvxObj::read_pcd_xyz(const char * filename, const bool &iscrop)
 
 void LvxObj::read_pcds_xyz(const std::string & dir, const bool &iscrop, const int & frame_num)
 {
-	intptr_t handle;  
+	intptr_t handle;  // 为了跨平台适应intptr_t
 	struct _finddata_t fileinfo;
-
-	// Find all the dir/*.pcd files
+	//第一次查找
 	std::string p;
 	handle = _findfirst(p.append(dir).append("/*.pcd").c_str(), &fileinfo);
 	if (handle == -1){ 
@@ -362,15 +358,17 @@ void LvxObj::read_pcds_xyz(const std::string & dir, const bool &iscrop, const in
 	}
 		
 	std::vector<std::string> files;
+	
 	do
 	{
+		//找到的文件的文件名
 		printf("%s\n", fileinfo.name);
 		files.push_back(p.assign(dir).append("/").append(fileinfo.name));
 	} while (!_findnext(handle, &fileinfo));
 	_findclose(handle);
 
-	// Merge frame_num frames' pointcloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
 	for (int frame = 0; frame < frame_num; frame++) 
 	{
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_frame(new pcl::PointCloud<pcl::PointXYZ>);
@@ -385,13 +383,12 @@ void LvxObj::read_pcds_xyz(const std::string & dir, const bool &iscrop, const in
 	this->points_xyz->clear();
 	if (!iscrop)
 	{
-		// Copy directly
 		pcl::copyPointCloud(*cloud, *(this->points_xyz));
 		return;
 	}
 	else
 	{
-		// Frustrum culling
+		// 根据transform-matrix裁剪一部分
 		int size = cloud->size();
 		std::cout << "cloud-size = " << size << std::endl;
 		int row_bound = this->image.rows;

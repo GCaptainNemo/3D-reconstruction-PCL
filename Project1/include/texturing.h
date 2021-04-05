@@ -51,15 +51,15 @@ public:
 	 * \param p1, p2, p3              Triangular face's vertices.
 	 * \param proj1, proj2, proj3     Image coordinates.
 	 */
-	static bool is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
+	bool is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
 		pcl::PointXY &proj1, pcl::PointXY &proj2, pcl::PointXY &proj3);
 
 	/*!
-	 * \brief getPixelCoordinates     Calculate UV coordinates.
+	 * \brief get_pixel_coordinates     Calculate UV coordinates.
 	 * \param camera                  Camera Pose
 	 * \return  
 	 */
-	static bool getPixelCoordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates);
+	bool get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates);
 
 
 	/*!

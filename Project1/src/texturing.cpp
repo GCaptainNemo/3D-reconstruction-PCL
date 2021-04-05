@@ -14,7 +14,7 @@ Texturing::~Texturing()
 
 void Texturing::load_mesh(pcl::PolygonMeshPtr mesh)
 {
-	mesh->cloud = this->texture_mesh_->cloud;
+	this->texture_mesh_->cloud = mesh->cloud;
 	std::vector<pcl::Vertices> polygons;
 	
 	// Push faces from ply-mesh into TextureMesh
@@ -24,7 +24,9 @@ void Texturing::load_mesh(pcl::PolygonMeshPtr mesh)
 		polygons[i] = mesh->polygons[i];
 	}
 	texture_mesh_->tex_polygons.push_back(polygons);
+	std::wcout << "there are " << mesh->polygons.size() << " polygons" << std::endl;
 };
+
 void Texturing::load_camera()
 {
 	std::ifstream bundleFile;
@@ -118,12 +120,12 @@ void Texturing::load_camera()
 
 bool Texturing::is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, pcl::PointXY &proj1, pcl::PointXY &proj2, pcl::PointXY &proj3)
 {
-	return (getPixelCoordinates(p1, camera, proj1) && getPixelCoordinates(p2, camera, proj2) && getPixelCoordinates(p3, camera, proj3));
+	return (this->get_pixel_coordinates(p1, camera, proj1) && this->get_pixel_coordinates(p2, camera, proj2) && this->get_pixel_coordinates(p3, camera, proj3));
 }
 
-bool Texturing::getPixelCoordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates) 
+bool Texturing::get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates) 
 {
-	if (pt.x > 0)
+	if (pt.z > 0)
 	{
 		// compute image center and dimension
 		double sizeX = cam.width;
@@ -158,7 +160,7 @@ bool Texturing::getPixelCoordinates(const pcl::PointXYZ &pt, const pcl::TextureM
 			return (true); // point was visible by the camera
 		}
 	}
-
+	
 	// point is NOT visible by the camera
 	UV_coordinates.x = -1.0f;
 	UV_coordinates.y = -1.0f;
@@ -217,7 +219,9 @@ void Texturing::mesh_image_match()
 
 	// Convert vertices to pcl::PointXYZ cloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr meshCloud(new pcl::PointCloud<pcl::PointXYZ>);
+	std::cout << "there are " << texture_mesh_->cloud.width * texture_mesh_->cloud.height << " texture mesh cloud\n";
 	pcl::fromPCLPointCloud2(texture_mesh_->cloud, *meshCloud);
+	std::cout << "there are " << meshCloud->size() << " meshcloud\n";
 
 	// Create dummy point and UV-index for vertices not visible in any cameras
 	pcl::PointXY nanPoint;
@@ -226,13 +230,13 @@ void Texturing::mesh_image_match()
 	pcl::texture_mapping::UvIndex uvNull;
 	uvNull.idx_cloud = -1;
 	uvNull.idx_face = -1;
-
+	std::cout << "there are " << cameras_.size() << " cameras" << std::endl;
 	for (size_t cameraIndex = 0; cameraIndex < cameras_.size(); ++cameraIndex)
 	{
 		// Move vertices in mesh into the camera coordinate system
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cameraCloud(new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::transformPointCloud(*meshCloud, *cameraCloud, cameras_[cameraIndex].pose.inverse());
-
+		
 		// Cloud to contain points projected into current camera
 		pcl::PointCloud<pcl::PointXY>::Ptr projections(new pcl::PointCloud<pcl::PointXY>);
 
@@ -247,18 +251,20 @@ void Texturing::mesh_image_match()
 		int countInsideFrustum = 0;
 
 		// Frustum culling for all faces
+		std::cout << "start Frustrum culling\n";
 		for (size_t faceIndex = 0; faceIndex < texture_mesh_->tex_polygons[0].size(); ++faceIndex)
 		{
 			// Variables for the face vertices as projections in the camera plane
 			pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
-
 			// If the face is inside the camera frustum
-			if (is_face_projected(cameras_[cameraIndex],
+			if (this->is_face_projected(cameras_[cameraIndex],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],
 				pixelPos0, pixelPos1, pixelPos2))
 			{
+				std::cout << "in is_face_projected " << std::endl;
+
 				// Add pixel positions in camera to projections
 				projections->points.push_back((pixelPos0));
 				projections->points.push_back((pixelPos1));
@@ -303,6 +309,7 @@ void Texturing::mesh_image_match()
 
 
 		// If any faces are visible in the current camera, perform occlusion culling
+		std::cout << "start occlusion culling\n";
 		if (countInsideFrustum > 0)
 		{
 			// Set up acceleration structure
@@ -319,8 +326,8 @@ void Texturing::mesh_image_match()
 
 					// Variables for the vertices in face as projections in the camera plane
 					pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
-
-					if (is_face_projected(cameras_[cameraIndex],
+					
+					if (this->is_face_projected(cameras_[cameraIndex],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],

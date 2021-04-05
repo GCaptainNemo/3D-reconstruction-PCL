@@ -16,7 +16,7 @@
 
 typedef pcl::PointXYZ Point;
 
-class pc_operator
+class PcOperator
 {
 public:
 

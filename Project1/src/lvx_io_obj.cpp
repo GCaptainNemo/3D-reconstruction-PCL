@@ -31,13 +31,13 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 
 	// point cloud pre-processing include down sample, filter, and smoothing
 	if (preprocess) {
-		//pc_operator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
-		//pc_operator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
+		//PcOperator::down_sample(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.01);
+		//PcOperator::statistical_filter(lvx_obj.points_xyz, lvx_obj.points_xyz, 50, 3.0);
 		
 		// smoothing radius = 100mm
-		pc_operator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.1); 
-		pc_operator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
-		// pc_operator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
+		PcOperator::resampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 0.1); 
+		PcOperator::upsampling(lvx_obj.points_xyz, lvx_obj.points_xyz);
+		// PcOperator::random_sampling(lvx_obj.points_xyz, lvx_obj.points_xyz, 60000);
 	}
 
 	// get colored point cloud(use point-image mapping)
@@ -60,13 +60,13 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
 		pcl::RangeImage& range_image = *range_image_ptr;
 
-		pc_operator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
+		PcOperator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
 		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
 		range_image_widget.showRangeImage(range_image);
 		range_image_widget.setWindowTitle("RangeImage");
 
 		pcl::PolygonMesh mesh;
-		pc_operator::range_image_reconstruct(mesh, range_image_ptr);
+		PcOperator::range_image_reconstruct(mesh, range_image_ptr);
 		Texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
 
 		// visualize
@@ -86,14 +86,14 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	{
 		// B-spline meshing
 		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
-		pc_operator::bspline_reconstruction(lvx_obj.points_xyz);
+		PcOperator::bspline_reconstruction(lvx_obj.points_xyz);
 	}
 	else {
 		// greedy projection triangulation and poisson reconstrucion
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 
 		// estimate point cloud normal vector
-		pc_operator::estimate_normal(lvx_obj.points_xyz, normals, 10);
+		PcOperator::estimate_normal(lvx_obj.points_xyz, normals, 10);
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		
@@ -105,21 +105,30 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		if (strcmp(option, "poisson") == 0)
 		{
 			// poisson reconstrucion
-			pc_operator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+			PcOperator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
  			
 			// mesh decimation
-			pc_operator::decimateMesh(0.2, mesh);
+			PcOperator::decimateMesh(0.2, mesh);
 
 			// project each point to get color(low resolution) 
-			Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+			//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
-			//pc_operator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
+			Texturing texturing;
+			
+			std::cout << "load-mesh-finish\n";
+			texturing.load_mesh(mesh);
+			std::cout << "load-camera-finish\n";
+			texturing.load_camera();
+			std::cout << "match-finish\n";
+			texturing.mesh_image_match();
+
+			//PcOperator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }
 		}
 		else if (strcmp(option, "greedy") == 0)
 		{
 			// greedy projection triangulation
-			pc_operator::triangular(rgbcloud_with_normals, *mesh);  // greedy projection triangulation
+			PcOperator::triangular(rgbcloud_with_normals, *mesh);  // greedy projection triangulation
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/greedy_mesh.ply", *mesh); }
 		}
 

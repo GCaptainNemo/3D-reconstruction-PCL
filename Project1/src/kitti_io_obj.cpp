@@ -281,7 +281,7 @@ void KittiObj::read_bin_xyz(const char * filename, const bool &iscrop)
 	}
 	else 
 	{
-		// 根据transform-matrix裁剪一部分
+		// Frustrum culling
 		int row_bound = this->image.rows;
 		int column_bound = this->image.cols;
 		for (int i = 0; input.good() && !input.eof(); i++)
@@ -351,7 +351,6 @@ void KittiObj::project_get_rgb() {
 
 void KittiObj::read_bin_xyzi(const std::string & filename, const bool &crop)
 {
-	// bug exists, don't use.
 	fstream input(filename.c_str(), ios::in | ios::binary);
 	if (!input.good())
 	{
@@ -372,7 +371,7 @@ void KittiObj::read_bin_xyzi(const std::string & filename, const bool &crop)
 		input.close();
 	}
 	else {
-		// 根据transform-matrix裁剪一部分
+		// Frustrum culling
 		int row_bound = this->image.rows;
 		int column_bound = this->image.cols;
 		

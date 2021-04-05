@@ -205,9 +205,12 @@ void PcOperator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr
 		std::cout << "start reduce vertex counts\n";
 		decimator.process(*decimatedMesh_.get());
 		
-		mesh_ = decimatedMesh_;
+		// copy to cloud, polygons to mesh_
+		mesh_->cloud = decimatedMesh_->cloud;
+		mesh_->polygons = decimatedMesh_->polygons;
+
 		std::cout << "after decimation vertex size = " << mesh_->cloud.width * mesh_->cloud.height << std::endl;
-		std::cout << "after decimation polygon size = " << mesh_->polygons.size() << std::endl;
+		std::cout << "after decimation mesh size = " << mesh_->polygons.size() << std::endl;
 
 	}
 }

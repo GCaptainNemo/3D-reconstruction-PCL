@@ -52,7 +52,10 @@ void Texturing::load_camera()
 		pcl::TextureMapping<pcl::PointXYZ>::Camera cam;
 		Eigen::Affine3f transform;
 		bundleFile >> val; //Read focal length from bundle file
+		std::cout << "focal_length = " << val << std::endl;
 		cam.focal_length = val;
+
+		// bundleFile store camera pose parameters.
 		bundleFile >> val; //Read k1 from bundle file
 		bundleFile >> val; //Read k2 from bundle file
 
@@ -77,20 +80,19 @@ void Texturing::load_camera()
 		transform(3, 2) = 0.0;
 		transform(3, 3) = 1.0;
 
-		transform = transform.inverse();
+		// transform = transform.inverse();
 
 		// Column negation
-		transform(0, 2) = -1.0*transform(0, 2);
+		/*transform(0, 2) = -1.0*transform(0, 2);
 		transform(1, 2) = -1.0*transform(1, 2);
 		transform(2, 2) = -1.0*transform(2, 2);
 
 		transform(0, 1) = -1.0*transform(0, 1);
 		transform(1, 1) = -1.0*transform(1, 1);
 		transform(2, 1) = -1.0*transform(2, 1);
-
+*/
 		// Set values from bundle to current camera
 		cam.pose = transform;
-
 		cam.texture_file = "../../resources/livox_hikvision/test.png";
 		
 
@@ -120,7 +122,7 @@ void Texturing::load_camera()
 
 bool Texturing::is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, pcl::PointXY &proj1, pcl::PointXY &proj2, pcl::PointXY &proj3)
 {
-	return (this->get_pixel_coordinates(p1, camera, proj1) && this->get_pixel_coordinates(p2, camera, proj2) && this->get_pixel_coordinates(p3, camera, proj3));
+	return (Texturing::get_pixel_coordinates(p1, camera, proj1) && Texturing::get_pixel_coordinates(p2, camera, proj2) && Texturing::get_pixel_coordinates(p3, camera, proj3));
 }
 
 bool Texturing::get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates) 
@@ -257,14 +259,13 @@ void Texturing::mesh_image_match()
 			// Variables for the face vertices as projections in the camera plane
 			pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
 			// If the face is inside the camera frustum
-			if (this->is_face_projected(cameras_[cameraIndex],
+			if (Texturing::is_face_projected(cameras_[cameraIndex],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
 				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],
 				pixelPos0, pixelPos1, pixelPos2))
 			{
-				std::cout << "in is_face_projected " << std::endl;
-
+				
 				// Add pixel positions in camera to projections
 				projections->points.push_back((pixelPos0));
 				projections->points.push_back((pixelPos1));
@@ -299,9 +300,9 @@ void Texturing::mesh_image_match()
 				// Update visibility vector
 				visibility[faceIndex] = false;
 			}
-
-
 		}
+		std::cout << "there are " << countInsideFrustum << " faces inside Frustrum\n";
+
 		std::vector<double> local_tTIA_distances(texture_mesh_->tex_polygons[0].size(), DBL_MAX);
 		std::vector<double> local_tTIA_angles(texture_mesh_->tex_polygons[0].size(), DBL_MAX);
 		
@@ -314,6 +315,8 @@ void Texturing::mesh_image_match()
 		{
 			// Set up acceleration structure
 			pcl::KdTreeFLANN<pcl::PointXY> kdTree;
+			
+			// Input data is project to image coordinate points(UV). Arrange by facet
 			kdTree.setInputCloud(projections);
 
 			// Loop through all faces and perform occlusion culling for faces inside frustum
@@ -322,12 +325,13 @@ void Texturing::mesh_image_match()
 				if (visibility[faceIndex])
 				{
 					// Vectors to store output from radiusSearch in acceleration structure
-					std::vector<int> neighbors; std::vector<float> neighborsSquaredDistance;
+					std::vector<int> neighbors;  // The index of neighbours. 
+					std::vector<float> neighborsSquaredDistance;  // The distance of neighbours.
 
 					// Variables for the vertices in face as projections in the camera plane
 					pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
 					
-					if (this->is_face_projected(cameras_[cameraIndex],
+					if (Texturing::is_face_projected(cameras_[cameraIndex],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
 						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],
@@ -372,13 +376,13 @@ void Texturing::mesh_image_match()
 						normal.z = diff0.x * diff1.y - diff0.y * diff1.x;
 						double norm = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
 						//Angle of face to camera£¨Camera coordinate system£©
-						double cos = normal.x / norm;
+						double cos = normal.z / norm;
 
-						//Save distance of faceIndex to current camera
+						//Save distance of faceIndex to current camera, maximize distances of three vertices
 						local_tTIA_distances[faceIndex] = distance;
 
 						//Save angle of faceIndex to current camera
-						if (normal.x >= 0)
+						if (normal.z >= 0)
 							local_tTIA_angles[faceIndex] = sqrt(1.0 - cos * cos);
 						
 						// If other projections are found inside the radius
@@ -394,7 +398,7 @@ void Texturing::mesh_image_match()
 								// If the neighbor has a greater distance to the camera and is inside face polygon set it as not visible
 								if (distance < neighborDistance)
 								{
-									if (check_point_in_triangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
+									if (Texturing::check_point_in_triangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
 									{
 										// Update visibility for neighbors
 										visibility[indexUvToPoints[neighbors[i]].idx_face] = false;

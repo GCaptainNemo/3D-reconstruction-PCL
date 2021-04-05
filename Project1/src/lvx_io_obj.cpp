@@ -109,6 +109,9 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
  			
 			// mesh decimation
 			PcOperator::decimateMesh(0.2, mesh);
+			std::cout << "after decimate Mesh size = " << mesh->polygons.size() << std::endl;
+			std::cout << "after decimate cloud size = " << mesh->cloud.width * mesh->cloud.height << std::endl;
+
 
 			// project each point to get color(low resolution) 
 			//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);

@@ -51,7 +51,7 @@ public:
 	 * \param p1, p2, p3              Triangular face's vertices.
 	 * \param proj1, proj2, proj3     Image coordinates.
 	 */
-	bool is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
+	static bool is_face_projected(const pcl::TextureMapping<pcl::PointXYZ>::Camera &camera, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, const pcl::PointXYZ &p3, 
 		pcl::PointXY &proj1, pcl::PointXY &proj2, pcl::PointXY &proj3);
 
 	/*!
@@ -59,7 +59,7 @@ public:
 	 * \param camera                  Camera Pose
 	 * \return  
 	 */
-	bool get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates);
+	static bool get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates);
 
 
 	/*!

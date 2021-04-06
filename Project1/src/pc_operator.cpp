@@ -16,6 +16,8 @@
 
 #define PI 3.1415926535
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downSampled, const float & voxel_size)
 {
@@ -34,6 +36,7 @@ void PcOperator::down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_upsampled) 
 {
@@ -62,6 +65,7 @@ void PcOperator::upsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number) 
 {
@@ -80,6 +84,7 @@ void PcOperator::random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_smoothed, const float &searchRadius)
 {
@@ -97,6 +102,9 @@ void PcOperator::resampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	cloud_smoothed = mls_point.makeShared();
 	std::cout << "cloud_smoothed(resampled) =  " << cloud_smoothed->size() << std::endl;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filter,
 	const int & neighbour, const float & proportion)
 {
@@ -109,8 +117,7 @@ void PcOperator::statistical_filter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, p
 }
 
 
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints) 
 {
@@ -137,6 +144,8 @@ void PcOperator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	std::cout << "normals: " << normals->size() << ", " << "normals fields: " << pcl::getFieldsList(*normals) << std::endl;
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::normal_oriented(const pcl::PointXYZ &viewport, const pcl::PointCloud<pcl::PointXYZ>::Ptr pos_vec, pcl::PointCloud<pcl::Normal>::Ptr normals) 
 {
 	int count = 0;
@@ -168,7 +177,7 @@ void PcOperator::normal_oriented(const pcl::PointXYZ &viewport, const pcl::Point
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals, 
 	pcl::PolygonMesh &triangles)
 {
@@ -213,6 +222,8 @@ void PcOperator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_w
 	gp3.reconstruct(triangles);  
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr mesh_)
 {
 	if (reduction_factor <= 0 || reduction_factor > 1)
@@ -246,6 +257,8 @@ void PcOperator::decimateMesh(const float &reduction_factor, pcl::PolygonMeshPtr
 	}
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
 	pcl::PolygonMeshPtr mesh) 
 {
@@ -283,7 +296,7 @@ void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>:
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr points_xyzrgb)
 {
 	//noiseLevel设置周围点对当前点深度值的影响：
@@ -317,6 +330,8 @@ void PcOperator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pc
 
 };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::shared_ptr<pcl::RangeImage> range_image_ptr)
 {
 	pcl::OrganizedFastMesh<pcl::PointWithRange>::Ptr tri(new pcl::OrganizedFastMesh<pcl::PointWithRange>);
@@ -331,6 +346,7 @@ void PcOperator::range_image_reconstruct(pcl::PolygonMesh &triangles, boost::sha
 };
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PcOperator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud) 
 {
 	pcl::on_nurbs::NurbsDataSurface data;
@@ -439,6 +455,8 @@ void PcOperator::bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr obje
 	printf("finish \n");
 };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer)
 {
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr curve_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -477,6 +495,8 @@ void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visuali
 	viewer.addPointCloud(curve_cps, "cloud_cps");
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 void PointCloud2Vector3d(pcl::PointCloud<Point>::Ptr cloud, pcl::on_nurbs::vector_vec3d &data)
 {
 	for (unsigned i = 0; i < cloud->size(); i++)

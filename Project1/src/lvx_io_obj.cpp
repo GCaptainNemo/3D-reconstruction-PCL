@@ -27,7 +27,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	const std::string dir = "../output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 200);
+	lvx_obj.read_pcds_xyz(dir, true, 6);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -91,32 +91,41 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
 		PcOperator::bspline_reconstruction(lvx_obj.points_xyz);
 	}
-	else {
-		// greedy projection triangulation and poisson reconstrucion
+	else 
+	{
+		// Greedy projection triangulation and poisson reconstrucion
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 
-		// estimate point cloud normal vector
+		// Estimate point cloud normal vector
 		PcOperator::estimate_normal(lvx_obj.points_xyz, normals, 10);
+		
+		// Normal vector oriented according to the viewport
+		pcl::PointXYZ viewport = pcl::PointXYZ(0, 0, 0);
+		PcOperator::normal_oriented(viewport, lvx_obj.points_xyz, normals);
+		PcOperator::normal_oriented(viewport, lvx_obj.points_xyz, normals);
+
+
+		// Concatenate normal to xyzrgb pointcloud
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
 		
-		// mesh and texture_mesh_ptr
+		//flipNormalTowardsViewpoint(const PointT &point, float vp_x, float vp_y, float vp_z, Eigen::Vector4f &normal);
+
 		pcl::PolygonMeshPtr mesh = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
 		pcl::TextureMeshPtr texture_mesh_ptr = pcl::TextureMeshPtr(new pcl::TextureMesh);
 
-		// poisson reconstrucion
 		Texturing texturing;
-
 		if (strcmp(option, "poisson") == 0)
 		{
-			// poisson reconstrucion
-			PcOperator::poisson_reconstruction(rgbcloud_with_normals, mesh);  // poisson reconstruction
+			// Poisson reconstrucion
+			PcOperator::poisson_reconstruction(rgbcloud_with_normals, mesh);  
  			
-			// mesh decimation
+			// Mesh decimation
 			PcOperator::decimateMesh(0.2, mesh);
 			std::cout << "after decimate Mesh size = " << mesh->polygons.size() << std::endl;
 			std::cout << "after decimate cloud size = " << mesh->cloud.width * mesh->cloud.height << std::endl;
 			
+			// Color mesh : 1. Color Vertex mesh 2. Color texture mesh
 			#ifdef _COLOR_
 			{
 
@@ -131,7 +140,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 				std::cout << "match-finish\n";
 				texturing.calculate_patches();
 				std::cout << "calculate-patches-finish\n";
-				texturing.sortPatches();
+				texturing.sort_patches();
 				std::cout << "sort-patches-finish\n";
 				texturing.create_textures();
 				std::cout << "create textures-finish\n";
@@ -161,6 +170,9 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			viewer->addPolygonMesh(*mesh, "mesh");
 			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
 			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
+
+			//viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(lvx_obj.points_xyz, normals, 20, 0.02, "normals");
+			//viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5);
 		}
 		else {
 			viewer->addPolygonMesh(*mesh, "mesh");
@@ -174,7 +186,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		}
 		std::cout << "success" << std::endl;
 	}
-
+	
 }
 
 

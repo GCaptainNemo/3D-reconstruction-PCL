@@ -603,21 +603,21 @@ void Texturing::calculate_patches()
 	patches_.push_back(nonVisibleFaces);
 }
 
-Coords Texturing::recursiveFindCoords(Node &n, float w, float h)
+Coords Texturing::recursive_find_coords(Node &n, float w, float h)
 {
 	// Coordinates to return and place patch
 	Coords c;
 
 	if (NULL != n.lft_)
 	{
-		c = recursiveFindCoords(*(n.lft_), w, h);
+		c = recursive_find_coords(*(n.lft_), w, h);
 		if (c.success_)
 		{
 			return c;
 		}
 		else
 		{
-			return recursiveFindCoords(*(n.rgt_), w, h);
+			return recursive_find_coords(*(n.rgt_), w, h);
 		}
 	}
 	else
@@ -665,11 +665,11 @@ Coords Texturing::recursiveFindCoords(Node &n, float w, float h)
 			n.rgt_->height_ = n.height_ - h;
 		}
 
-		return recursiveFindCoords(*(n.lft_), w, h);
+		return recursive_find_coords(*(n.lft_), w, h);
 	}
 }
 
-void Texturing::sortPatches()
+void Texturing::sort_patches()
 {
 	// Bool to set true when done
 	bool done = false;
@@ -707,7 +707,7 @@ void Texturing::sortPatches()
 				// Try to place patch in root container for this material
 				if (w > 0.0 && h > 0.0)
 				{
-					patches_[patchIndex].c_ = recursiveFindCoords(root, w, h);
+					patches_[patchIndex].c_ = recursive_find_coords(root, w, h);
 				}
 
 				if (!patches_[patchIndex].c_.success_)

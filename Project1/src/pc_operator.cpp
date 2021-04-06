@@ -137,6 +137,37 @@ void PcOperator::estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 	std::cout << "normals: " << normals->size() << ", " << "normals fields: " << pcl::getFieldsList(*normals) << std::endl;
 }
 
+void PcOperator::normal_oriented(const pcl::PointXYZ &viewport, const pcl::PointCloud<pcl::PointXYZ>::Ptr pos_vec, pcl::PointCloud<pcl::Normal>::Ptr normals) 
+{
+	int count = 0;
+	for (int i = 0; i < normals->size(); ++i)
+	{
+		pcl::PointXYZ pos = pos_vec->points[i];
+		pcl::Normal normal = normals->points[i];
+
+		double diff_x = viewport.x - pos.x;
+		double diff_y = viewport.y - pos.y;
+		double diff_z = viewport.z - pos.z;
+		
+		// Oriented according to inner product between pos and normal.
+		double inner_product = diff_x * normal.normal_x + diff_y * normal.normal_y + diff_z * normal.normal_z;
+		if (inner_product < 0)
+		{
+			count++;
+			normal.normal_x *= -1;
+			normal.normal_y *= -1;
+			normal.normal_z *= -1;
+			std::cout << "---------------------------------------------------\n";
+			std::cout << "normal.normal_x = " << normal.normal_x << std::endl;
+			std::cout << "normal.normal_y = " << normal.normal_y << std::endl;
+			std::cout << "normal.normal_z = " << normal.normal_z << std::endl;
+			normals->points[i] = normal;
+		}
+	}
+	std::cout << "there are " << count << " normal filpped\n";
+}
+
+
 
 void PcOperator::triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals, 
 	pcl::PolygonMesh &triangles)
@@ -219,8 +250,8 @@ void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>:
 	pcl::PolygonMeshPtr mesh) 
 {
 	std::cout << "begin poisson reconstruction" << endl;
-	pcl::Poisson<pcl::PointXYZRGBNormal> poisson;
-	//poisson.setDegree(2);
+	pcl::Poisson<pcl::PointXYZRGBNormal> mesh_creator;
+	//mesh_creator.setDegree(2);
 	
 	int nPoints = rgb_cloud_with_normals->size();
 	// Assume points are located (roughly) in a plane.
@@ -235,15 +266,15 @@ void PcOperator::poisson_reconstruction(pcl::PointCloud<pcl::PointXYZRGBNormal>:
 	}
 	std::cout << "tree_depth = " << depth << std::endl;
 
-	poisson.setDepth(depth);
+	mesh_creator.setDepth(depth);
 	
 	// Reconstruct surface is a Manifold
-	poisson.setManifold(true);
-	poisson.setSamplesPerNode(1);
-	//poisson.setOutputPolygons(false);
+	mesh_creator.setManifold(true);
+	mesh_creator.setSamplesPerNode(1);
+	//mesh_creator.setOutputPolygons(false);
 
-	poisson.setInputCloud(rgb_cloud_with_normals);
-	poisson.reconstruct(*mesh.get());
+	mesh_creator.setInputCloud(rgb_cloud_with_normals);
+	mesh_creator.reconstruct(*mesh.get());
 
 	std::cout << "finish poisson reconstruction" << std::endl;
 	std::cout << "Vertex count:" << mesh->cloud.width << std::endl;

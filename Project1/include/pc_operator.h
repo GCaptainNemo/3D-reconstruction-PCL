@@ -37,9 +37,11 @@ public:
 	static void random_sampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_randomsampled, const int & number);
 
-
+	
 	static void estimate_normal(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 		pcl::PointCloud<pcl::Normal>::Ptr normals, const int &nPoints);
+
+	static void normal_oriented(const pcl::PointXYZ &viewport, const pcl::PointCloud<pcl::PointXYZ>::Ptr pos, pcl::PointCloud<pcl::Normal>::Ptr normal);
 
 	// surface reconstruction algorithm
 	static void triangular(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgb_cloud_with_normals, 
@@ -65,6 +67,7 @@ public:
 
 	static void bspline_reconstruction(pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud);
 	
+
 };
 
 void visualizeCurve(ON_NurbsCurve &curve, ON_NurbsSurface &surface, pcl::visualization::PCLVisualizer &viewer);

@@ -22,7 +22,7 @@
 
 
 /*!
- * \brief The Coords struct     Coordinate class used in recursiveFindCoordinates for OdmTexturing::sortPatches().
+ * \brief The Coords struct     Coordinate class used in recursiveFindCoordinates for OdmTexturing::sort_patches().
  */
 struct Coords
 {
@@ -67,7 +67,7 @@ struct Patch
 };
 
 /*!
- * \brief The Node struct       Node class for acceleration structure in OdmTexturing::sortPatches().
+ * \brief The Node struct       Node class for acceleration structure in OdmTexturing::sort_patches().
  */
 struct Node
 {
@@ -136,18 +136,18 @@ public:
 	void calculate_patches();
 
 	/*!
-	 * \brief sortPatches       Sorts patches into UV-containers to be used in create_textures() using a rectangle packer approach.
+	 * \brief sort_patches       Sorts patches into UV-containers to be used in create_textures() using a rectangle packer approach.
 	 */
-	void sortPatches();
+	void sort_patches();
 
 	/*!
-	 * \brief recursiveFindCoords   Recursive function used in sortPatches() to find free area to place patch.
+	 * \brief recursive_find_coords   Recursive function used in sort_patches() to find free area to place patch.
 	 * \param n                     The container in which to check for free space in.
 	 * \param w                     The width of the box to place.
 	 * \param h                     The height of the box to place.
 	 * \return                      The coordinates where the patch has been placed.
 	 */
-	Coords recursiveFindCoords(Node &n, float w, float h);
+	Coords recursive_find_coords(Node &n, float w, float h);
 
 	/*!
 	 * \brief create_textures    Creates textures to the mesh.

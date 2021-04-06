@@ -68,4 +68,7 @@ Poisson重建和样条重建都利用了流形假设，使用曲面拟合点云�
 ## 六、参考
 [1] 解析.lvx文件代码参考[pylvx](https://github.com/Jaesirky/pylvx)
 
-[2] [poisson重建-后处理](https://blog.csdn.net/u012750702/article/details/53351941)
+[2] [OpenDroneMap 开源代码](https://github.com/geraldmwangi/OpenDroneMap)
+
+[3] [poisson重建-后处理](https://blog.csdn.net/u012750702/article/details/53351941)
+

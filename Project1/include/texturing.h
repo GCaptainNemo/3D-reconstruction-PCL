@@ -3,14 +3,22 @@
 // STL
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 // PCL
 #include <pcl/surface/texture_mapping.h>
 #include <pcl/point_types.h>
+#include <pcl/io/ply_io.h>
+
+
 
 // OpenCV
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp> 
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc/types_c.h>
+
+
 
 
 /*!
@@ -128,7 +136,7 @@ public:
 	void calculate_patches();
 
 	/*!
-	 * \brief sortPatches       Sorts patches into UV-containers to be used in createTextures() using a rectangle packer approach.
+	 * \brief sortPatches       Sorts patches into UV-containers to be used in create_textures() using a rectangle packer approach.
 	 */
 	void sortPatches();
 
@@ -142,10 +150,14 @@ public:
 	Coords recursiveFindCoords(Node &n, float w, float h);
 
 	/*!
-	 * \brief createTextures    Creates textures to the mesh.
+	 * \brief create_textures    Creates textures to the mesh.
 	 */
-	void createTextures();
+	void create_textures();
 
+	/*!
+	 * \brief write_obj_file      Writes the textured mesh to file on the OBJ format.
+	 */
+	void write_obj_file();
 
 	/*!
 	 * \brief color_mesh              Give each polygon's vertex color according to KNN PointXYZRGB
@@ -171,6 +183,12 @@ public:
 	 */
 	static bool get_pixel_coordinates(const pcl::PointXYZ &pt, const pcl::TextureMapping<pcl::PointXYZ>::Camera &cam, pcl::PointXY &UV_coordinates);
 
+	/*!
+	 * \brief get_pixel_coordinates     Calculate UV coordinates.
+	 * \param camera                  Camera Pose
+	 * \return success or not
+	 */
+	static int saveOBJFile(const std::string &file_name, const pcl::TextureMesh &tex_mesh, unsigned precision);
 
 	/*!
 	 * \brief get_triangle_centroid     Calculate circumscribed circle centroid and radius.
@@ -186,8 +204,12 @@ public:
 	std::vector<int> tTIA_;                         /**< The vector containing the optimal cameras for all faces. */
 	std::vector<Patch> patches_;    /**< The vector containing all patches */
 	double textureResolution_;      /**< The resolution of each texture. */
+	double textureWithSize_;        /**< The desired size of the images to texture with. */
 	double padding_;                /**< A padding used to handle edge cases. */
 	int nrTextures_;             /**< The number of textures created. */
+
+	std::string outputFolder_;      /**< Path to the folder to store the output mesh and textures. */
+
 
 };
 

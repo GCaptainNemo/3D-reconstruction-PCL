@@ -127,6 +127,12 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			texturing.calculate_patches();
 			std::cout << "calculate-patches-finish\n";
 			texturing.sortPatches();
+			std::cout << "sort-patches-finish\n";
+			texturing.create_textures();
+			std::cout << "create textures-finish\n";
+			texturing.write_obj_file();
+			std::cout << "write obj file-finish\n";
+
 
 			//PcOperator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }

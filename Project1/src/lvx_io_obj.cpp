@@ -1,5 +1,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/range_image_visualizer.h>
+#include <pcl/surface/marching_cubes_hoppe.h>
+#include <pcl/surface/marching_cubes.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <Python.h>
@@ -90,6 +92,38 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		// B-spline meshing
 		std::cout << "sizexyz  = " << lvx_obj.points_xyz->size();
 		PcOperator::bspline_reconstruction(lvx_obj.points_xyz);
+	}
+	else if (strcmp(option, "mc") == 0)
+	{
+		std::cout << "in marching cube option\n";
+		pcl::PolygonMeshPtr mesh;
+		std::cout << "initialize mesh\n";
+
+		pcl::MarchingCubesHoppe<pcl::PointXYZ>::Ptr mc;
+		std::cout << "initialize mc\n";
+		
+		// Grid resolution: 1dm x 1dm x 1dm
+		mc->setGridResolution(0.1, 0.1, 0.1);
+		std::cout << "initialize resolution\n";
+
+
+		mc->setInputCloud(lvx_obj.points_xyz);
+		std::cout << "initialize xyz\n";
+
+		
+		std::cout << "before marching cubes algorithm \n";
+		mc->reconstruct(*mesh.get());
+		std::cout << "Marching Cube reconstruction mesh size = " << mesh->polygons.size() << std::endl;
+		// pcl::MarchingCubes<pcl::PointXYZ> mc;
+		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("Marching Cubes"));
+		viewer->addPolygonMesh(*mesh.get(), "mesh");
+		viewer->initCameraParameters();
+		viewer->addCoordinateSystem();
+		while (!viewer->wasStopped()) {
+			viewer->spinOnce(100);
+			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+		}
+		std::cout << "success" << std::endl;		
 	}
 	else 
 	{

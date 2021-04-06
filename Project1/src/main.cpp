@@ -25,7 +25,7 @@ int main()
 	//LvxObj::openPCDfile("./output/test.pcd", show);
 	bool save = false;
 	bool preprocess = false;
-	dealwith_lvx(preprocess, "poisson", save);
+	dealwith_lvx(preprocess, "mc", save);
 	return 0;
 }
 

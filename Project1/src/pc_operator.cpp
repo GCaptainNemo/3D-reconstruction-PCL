@@ -11,6 +11,7 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/surface/impl/organized_fast_mesh.hpp> 
 #include <pcl/surface/organized_fast_mesh.h>
+#include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/io/png_io.h>
 #include <pcl/surface/vtk_smoothing/vtk_mesh_quadric_decimation.h>
 

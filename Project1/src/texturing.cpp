@@ -204,7 +204,6 @@ bool Texturing::check_point_in_triangle(const pcl::PointXY &p1, const pcl::Point
 void Texturing::mesh_image_match()
 {
 	// Frustrum culling + Occlusion culling
-
 	tTIA_.resize(texture_mesh_->tex_polygons[0].size());
 
 	// Set all values in the triangleToImageAssignment vector to a default value (-1) if there are no optimal camera

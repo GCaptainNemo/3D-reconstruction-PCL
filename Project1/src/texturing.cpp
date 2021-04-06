@@ -1,9 +1,14 @@
 #include "../include/texturing.h"
+#include <algorithm>
 
 Texturing::Texturing() 
 {
 	this->texture_mesh_ = pcl::TextureMeshPtr(new pcl::TextureMesh);
 	tTIA_ = std::vector<int>(0);
+	patches_ = std::vector<Patch>(0);
+	textureResolution_ = 4096.0;
+	padding_ = 15.0;
+
 }
 
 Texturing::~Texturing() 
@@ -433,6 +438,504 @@ void Texturing::mesh_image_match()
 	}
 }
 
+void Texturing::calculate_patches()
+{
+	// Convert vertices to pcl::PointXYZ cloud
+	pcl::PointCloud<pcl::PointXYZ>::Ptr meshCloud(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::fromPCLPointCloud2(texture_mesh_->cloud, *meshCloud);
+
+	// Reserve size for patches_, tTIA_ is optimal camera index of each face.
+	patches_.reserve(tTIA_.size());
+
+	// Vector containing vector with indicies to faces visible in corresponding camera index
+	std::vector<std::vector<int> > optFaceCameraVector = std::vector<std::vector<int> >(cameras_.size());
+
+	// Counter variables for visible and occluded faces
+	int countVis = 0;
+	int countOcc = 0;
+
+	Patch nonVisibleFaces;
+	nonVisibleFaces.optimalCameraIndex_ = -1;
+	nonVisibleFaces.materialIndex_ = -1;
+	nonVisibleFaces.placed_ = true;
+
+	// Setup vector containing vectors with all faces correspondning to camera according to triangleToImageAssignment vector
+	for (size_t i = 0; i < tTIA_.size(); ++i)
+	{
+		if (tTIA_[i] > -1)
+		{
+			// If face has an optimal camera add to optFaceCameraVector and update counter for visible faces
+			countVis++;
+			optFaceCameraVector[tTIA_[i]].push_back(i);
+		}
+		else
+		{
+			// Add non visible face to patch nonVisibleFaces
+			nonVisibleFaces.faces_.push_back(i);
+
+			// Update counter for occluded faces
+			countOcc++;
+		}
+	}
+
+	// Loop through all cameras
+	for (size_t cameraIndex = 0; cameraIndex < cameras_.size(); ++cameraIndex)
+	{
+		// Transform mesh into camera coordinate system
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cameraCloud(new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::transformPointCloud(*meshCloud, *cameraCloud, cameras_[cameraIndex].pose.inverse());
+
+		// While faces visible in camera remains to be assigned to a patch
+		while (0 < optFaceCameraVector[cameraIndex].size())
+		{
+			// Create current patch
+			Patch patch;
+
+			// Vector containing faces to check connectivity with current patch
+			std::vector<size_t> addedFaces = std::vector<size_t>(0);
+
+			// Add last face in optFaceCameraVector to faces to check connectivity and add it to the current patch
+			addedFaces.push_back(optFaceCameraVector[cameraIndex].back());
+
+			// Add first face to patch
+			patch.faces_.push_back(optFaceCameraVector[cameraIndex].back());
+
+			// Remove face from optFaceCameraVector
+			optFaceCameraVector[cameraIndex].pop_back();
+
+			// Declare uv-coordinates for face
+			pcl::PointXY uvCoord1; pcl::PointXY uvCoord2; pcl::PointXY uvCoord3;
+
+			// Calculate uv-coordinates for face in camera
+			if (Texturing::is_face_projected(cameras_[cameraIndex],
+				cameraCloud->points[texture_mesh_->tex_polygons[0][addedFaces.back()].vertices[0]],
+				cameraCloud->points[texture_mesh_->tex_polygons[0][addedFaces.back()].vertices[1]],
+				cameraCloud->points[texture_mesh_->tex_polygons[0][addedFaces.back()].vertices[2]],
+				uvCoord1, uvCoord2, uvCoord3))
+			{
+				// Set minimum and maximum uv-coordinate value for patch
+				patch.minu_ = std::min(uvCoord1.x, std::min(uvCoord2.x, uvCoord3.x));
+				patch.minv_ = std::min(uvCoord1.y, std::min(uvCoord2.y, uvCoord3.y));
+				patch.maxu_ = std::max(uvCoord1.x, std::max(uvCoord2.x, uvCoord3.x));
+				patch.maxv_ = std::max(uvCoord1.y, std::max(uvCoord2.y, uvCoord3.y));
+
+				while (0 < addedFaces.size())
+				{
+					// Set face to check neighbors
+					size_t patchFaceIndex = addedFaces.back();
+
+					// Remove patchFaceIndex from addedFaces
+					addedFaces.pop_back();
+
+					// Check against all remaining faces with the same optimal camera
+					for (size_t i = 0; i < optFaceCameraVector[cameraIndex].size(); ++i)
+					{
+						size_t modelFaceIndex = optFaceCameraVector[cameraIndex][i];
+
+						// Don't check against self
+						if (modelFaceIndex != patchFaceIndex)
+						{
+							// Store indices for vertices of both faces
+							size_t face0v0 = texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[0];
+							size_t face0v1 = texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[1];
+							size_t face0v2 = texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[2];
+							size_t face1v0 = texture_mesh_->tex_polygons[0][patchFaceIndex].vertices[0];
+							size_t face1v1 = texture_mesh_->tex_polygons[0][patchFaceIndex].vertices[1];
+							size_t face1v2 = texture_mesh_->tex_polygons[0][patchFaceIndex].vertices[2];
+
+							// Count the number of shared vertices
+							size_t nShared = 0;
+							nShared += (face0v0 == face1v0 ? 1 : 0) + (face0v0 == face1v1 ? 1 : 0) + (face0v0 == face1v2 ? 1 : 0);
+							nShared += (face0v1 == face1v0 ? 1 : 0) + (face0v1 == face1v1 ? 1 : 0) + (face0v1 == face1v2 ? 1 : 0);
+							nShared += (face0v2 == face1v0 ? 1 : 0) + (face0v2 == face1v1 ? 1 : 0) + (face0v2 == face1v2 ? 1 : 0);
+
+							// If sharing a vertex
+							if (nShared > 0)
+							{
+								// Declare uv-coordinates for face
+								pcl::PointXY uv1; pcl::PointXY uv2; pcl::PointXY uv3;
+
+								// Calculate uv-coordinates for face in camera
+								Texturing::is_face_projected(cameras_[cameraIndex],
+									cameraCloud->points[texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[0]],
+									cameraCloud->points[texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[1]],
+									cameraCloud->points[texture_mesh_->tex_polygons[0][modelFaceIndex].vertices[2]],
+									uv1, uv2, uv3);
+								
+								// Update minimum and maximum uv-coordinate value for patch
+								patch.minu_ = std::min(patch.minu_, std::min(uv1.x, std::min(uv2.x, uv3.x)));
+								patch.minv_ = std::min(patch.minv_, std::min(uv1.y, std::min(uv2.y, uv3.y)));
+								patch.maxu_ = std::max(patch.maxu_, std::max(uv1.x, std::max(uv2.x, uv3.x)));
+								patch.maxv_ = std::max(patch.maxv_, std::max(uv1.y, std::max(uv2.y, uv3.y)));
+
+								// Add modelFaceIndex to patch
+								patch.faces_.push_back(modelFaceIndex);
+
+								// Add modelFaceIndex from faces to check for neighbors with same optimal camera
+								addedFaces.push_back(modelFaceIndex);
+
+								// Remove modelFaceIndex from optFaceCameraVector to exclude it from comming iterations
+								optFaceCameraVector[cameraIndex].erase(optFaceCameraVector[cameraIndex].begin() + i);
+							}
+						}
+					}
+				}
+			}
+
+			// Set optimal camera for patch
+			patch.optimalCameraIndex_ = static_cast<int>(cameraIndex);
+
+			// Add patch to patches_ vector
+			patches_.push_back(patch);
+		}
+	}
+	patches_.push_back(nonVisibleFaces);
+}
+
+Coords Texturing::recursiveFindCoords(Node &n, float w, float h)
+{
+	// Coordinates to return and place patch
+	Coords c;
+
+	if (NULL != n.lft_)
+	{
+		c = recursiveFindCoords(*(n.lft_), w, h);
+		if (c.success_)
+		{
+			return c;
+		}
+		else
+		{
+			return recursiveFindCoords(*(n.rgt_), w, h);
+		}
+	}
+	else
+	{
+		// If the patch is to large or occupied return success false for coord
+		if (n.used_ || w > n.width_ || h > n.height_)
+		{
+			c.success_ = false;
+			return c;
+		}
+
+		// If the patch matches perfectly, store it
+		if (w == n.width_ && h == n.height_)
+		{
+			n.used_ = true;
+			c.r_ = n.r_;
+			c.c_ = n.c_;
+			c.success_ = true;
+
+			return c;
+		}
+
+		// Initialize children for node
+		n.lft_ = new Node(n);
+		n.rgt_ = new Node(n);
+
+		n.rgt_->used_ = false;
+		n.lft_->used_ = false;
+		n.rgt_->rgt_ = NULL;
+		n.rgt_->lft_ = NULL;
+		n.lft_->rgt_ = NULL;
+		n.lft_->lft_ = NULL;
+
+		// Check how to adjust free space
+		if (n.width_ - w > n.height_ - h)
+		{
+			n.lft_->width_ = w;
+			n.rgt_->c_ = n.c_ + w;
+			n.rgt_->width_ = n.width_ - w;
+		}
+		else
+		{
+			n.lft_->height_ = h;
+			n.rgt_->r_ = n.r_ + h;
+			n.rgt_->height_ = n.height_ - h;
+		}
+
+		return recursiveFindCoords(*(n.lft_), w, h);
+	}
+}
+
+void Texturing::sortPatches()
+{
+	// Bool to set true when done
+	bool done = false;
+
+	// Material index
+	int materialIndex = 0;
+
+	// Number of patches left from last loop
+	size_t countLeftLastIteration = 0;
+
+	while (!done)
+	{
+		// Create container for current material
+		Node root;
+		root.width_ = textureResolution_;
+		root.height_ = textureResolution_;
+
+		// Set done to true
+		done = true;
+
+		// Number of patches that did not fit in current material
+		size_t countNotPlacedPatches = 0;
+
+		// Number of patches placed in current material
+		size_t placed = 0;
+
+		for (size_t patchIndex = 0; patchIndex < patches_.size(); ++patchIndex)
+		{
+			if (!patches_[patchIndex].placed_)
+			{
+				// Calculate dimensions of the patch
+				float w = patches_[patchIndex].maxu_ - patches_[patchIndex].minu_ + 2 * padding_;
+				float h = patches_[patchIndex].maxv_ - patches_[patchIndex].minv_ + 2 * padding_;
+
+				// Try to place patch in root container for this material
+				if (w > 0.0 && h > 0.0)
+				{
+					patches_[patchIndex].c_ = recursiveFindCoords(root, w, h);
+				}
+
+				if (!patches_[patchIndex].c_.success_)
+				{
+					++countNotPlacedPatches;
+					done = false;
+				}
+				else
+				{
+					// Set patch material as current material
+					patches_[patchIndex].materialIndex_ = materialIndex;
+
+					// Set patch as placed
+					patches_[patchIndex].placed_ = true;
+
+					// Update number of patches placed in current material
+					placed++;
+
+					// Update patch with padding_
+					//patches_[patchIndex].c_.c_ += padding_;
+					//patches_[patchIndex].c_.r_ += padding_;
+					patches_[patchIndex].minu_ -= padding_;
+					patches_[patchIndex].minv_ -= padding_;
+					patches_[patchIndex].maxu_ = std::min((patches_[patchIndex].maxu_ + padding_), textureResolution_);
+					patches_[patchIndex].maxv_ = std::min((patches_[patchIndex].maxv_ + padding_), textureResolution_);
+				}
+			}
+		}
+
+		// Update material index
+		++materialIndex;
+
+		if (countLeftLastIteration == countNotPlacedPatches && countNotPlacedPatches != 0)
+		{
+			done = true;
+		}
+		countLeftLastIteration = countNotPlacedPatches;
+	}
+
+	// Set number of textures
+	nrTextures_ = materialIndex;
+}
+
+void Texturing::createTextures()
+{
+	// Convert vertices to pcl::PointXYZ cloud
+	pcl::PointCloud<pcl::PointXYZ>::Ptr meshCloud(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::fromPCLPointCloud2(this->texture_mesh_->cloud, *meshCloud);
+
+	// Container for faces according to submesh. Used to replace faces in mesh_.
+	std::vector<std::vector<pcl::Vertices> > faceVector = std::vector<std::vector<pcl::Vertices> >(nrTextures_ + 1);
+
+	// Container for texture coordinates according to submesh. Used to replace texture coordinates in mesh_.
+	std::vector<std::vector<Eigen::Vector2f> > textureCoordinatesVector = std::vector<std::vector<Eigen::Vector2f> >(nrTextures_ + 1);
+
+	// Container for materials according to submesh. Used to replace materials in mesh_.
+	std::vector<pcl::TexMaterial> materialVector = std::vector<pcl::TexMaterial>(nrTextures_ + 1);
+
+	// Setup model according to patches placement
+	for (int textureIndex = 0; textureIndex < nrTextures_; ++textureIndex)
+	{
+		for (size_t patchIndex = 0; patchIndex < patches_.size(); ++patchIndex)
+		{
+			// If patch is placed in current mesh add all containing faces to that submesh
+			if (patches_[patchIndex].materialIndex_ == textureIndex)
+			{
+				// Transform mesh into camera
+				pcl::PointCloud<pcl::PointXYZ>::Ptr cameraCloud(new pcl::PointCloud<pcl::PointXYZ>);
+				pcl::transformPointCloud(*meshCloud, *cameraCloud, cameras_[patches_[patchIndex].optimalCameraIndex_].pose.inverse());
+
+				// Loop through all faces in patch
+				for (size_t faceIndex = 0; faceIndex < patches_[patchIndex].faces_.size(); ++faceIndex)
+				{
+					// Setup global face index in mesh_
+					size_t globalFaceIndex = patches_[patchIndex].faces_[faceIndex];
+
+					// Add current face to current submesh
+					faceVector[textureIndex].push_back(texture_mesh_->tex_polygons[0][globalFaceIndex]);
+
+					// Pixel positions
+					pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
+
+					// Get pixel positions in corresponding camera for the vertices of the face
+					Texturing::get_pixel_coordinates(cameraCloud->points[texture_mesh_->tex_polygons[0][globalFaceIndex].vertices[0]], cameras_[patches_[patchIndex].optimalCameraIndex_], pixelPos0);
+					Texturing::get_pixel_coordinates(cameraCloud->points[texture_mesh_->tex_polygons[0][globalFaceIndex].vertices[1]], cameras_[patches_[patchIndex].optimalCameraIndex_], pixelPos1);
+					Texturing::get_pixel_coordinates(cameraCloud->points[texture_mesh_->tex_polygons[0][globalFaceIndex].vertices[2]], cameras_[patches_[patchIndex].optimalCameraIndex_], pixelPos2);
+
+					// Shorthands for patch variables
+					float c = patches_[patchIndex].c_.c_ + padding_;
+					float r = patches_[patchIndex].c_.r_ + padding_;
+					float minu = patches_[patchIndex].minu_ + padding_;
+					float minv = patches_[patchIndex].minv_ + padding_;
+
+					// Declare uv coordinates
+					Eigen::Vector2f uv1, uv2, uv3;
+
+					// Set uv coordinates according to patch
+					uv1(0) = (pixelPos0.x - minu + c) / textureResolution_;
+					uv1(1) = 1.0f - (pixelPos0.y - minv + r) / textureResolution_;
+
+					uv2(0) = (pixelPos1.x - minu + c) / textureResolution_;
+					uv2(1) = 1.0f - (pixelPos1.y - minv + r) / textureResolution_;
+
+					uv3(0) = (pixelPos2.x - minu + c) / textureResolution_;
+					uv3(1) = 1.0f - (pixelPos2.y - minv + r) / textureResolution_;
+
+					// Add uv coordinates to submesh
+					textureCoordinatesVector[textureIndex].push_back(uv1);
+					textureCoordinatesVector[textureIndex].push_back(uv2);
+					textureCoordinatesVector[textureIndex].push_back(uv3);
+				}
+			}
+		}
+
+		// Declare material and setup default values
+		pcl::TexMaterial meshMaterial;
+		meshMaterial.tex_Ka.r = 0.0f; meshMaterial.tex_Ka.g = 0.0f; meshMaterial.tex_Ka.b = 0.0f;
+		meshMaterial.tex_Kd.r = 0.0f; meshMaterial.tex_Kd.g = 0.0f; meshMaterial.tex_Kd.b = 0.0f;
+		meshMaterial.tex_Ks.r = 0.0f; meshMaterial.tex_Ks.g = 0.0f; meshMaterial.tex_Ks.b = 0.0f;
+		meshMaterial.tex_d = 1.0f; meshMaterial.tex_Ns = 200.0f; meshMaterial.tex_illum = 2;
+		std::stringstream tex_name;
+		tex_name << "texture_" << textureIndex;
+		tex_name >> meshMaterial.tex_name;
+		meshMaterial.tex_file = meshMaterial.tex_name + ".jpg";
+		materialVector[textureIndex] = meshMaterial;
+	}
+
+	// Add non visible patches to submesh
+	for (size_t patchIndex = 0; patchIndex < patches_.size(); ++patchIndex)
+	{
+		// If the patch does not have an optimal camera
+		if (patches_[patchIndex].optimalCameraIndex_ == -1)
+		{
+			// Add all faces and set uv coordinates
+			for (size_t faceIndex = 0; faceIndex < patches_[patchIndex].faces_.size(); ++faceIndex)
+			{
+				// Setup global face index in mesh_
+				size_t globalFaceIndex = patches_[patchIndex].faces_[faceIndex];
+
+				// Add current face to current submesh
+				faceVector[nrTextures_].push_back(texture_mesh_->tex_polygons[0][globalFaceIndex]);
+
+				// Declare uv coordinates
+				Eigen::Vector2f uv1, uv2, uv3;
+
+				// Set uv coordinates according to patch
+				uv1(0) = 0.25f;//(pixelPos0.x - minu + c)/textureResolution_;
+				uv1(1) = 0.25f;//1.0f - (pixelPos0.y - minv + r)/textureResolution_;
+
+				uv2(0) = 0.25f;//(pixelPos1.x - minu + c)/textureResolution_;
+				uv2(1) = 0.75f;//1.0f - (pixelPos1.y - minv + r)/textureResolution_;
+
+				uv3(0) = 0.75f;//(pixelPos2.x - minu + c)/textureResolution_;
+				uv3(1) = 0.75f;//1.0f - (pixelPos2.y - minv + r)/textureResolution_;
+
+				// Add uv coordinates to submesh
+				textureCoordinatesVector[nrTextures_].push_back(uv1);
+				textureCoordinatesVector[nrTextures_].push_back(uv2);
+				textureCoordinatesVector[nrTextures_].push_back(uv3);
+			}
+		}
+	}
+
+	// Declare material and setup default values for nonVisibileFaces submesh
+	pcl::TexMaterial meshMaterial;
+	meshMaterial.tex_Ka.r = 0.0f; meshMaterial.tex_Ka.g = 0.0f; meshMaterial.tex_Ka.b = 0.0f;
+	meshMaterial.tex_Kd.r = 0.0f; meshMaterial.tex_Kd.g = 0.0f; meshMaterial.tex_Kd.b = 0.0f;
+	meshMaterial.tex_Ks.r = 0.0f; meshMaterial.tex_Ks.g = 0.0f; meshMaterial.tex_Ks.b = 0.0f;
+	meshMaterial.tex_d = 1.0f; meshMaterial.tex_Ns = 200.0f; meshMaterial.tex_illum = 2;
+	std::stringstream tex_name;
+	tex_name << "non_visible_faces_texture";
+	tex_name >> meshMaterial.tex_name;
+	meshMaterial.tex_file = meshMaterial.tex_name + ".jpg";
+	materialVector[nrTextures_] = meshMaterial;
+
+	// Replace polygons, texture coordinates and materials in mesh_
+	texture_mesh_->tex_polygons = faceVector;
+	texture_mesh_->tex_coordinates = textureCoordinatesVector;
+	texture_mesh_->tex_materials = materialVector;
+
+	// Containers for image and the resized image used for texturing
+	cv::Mat image;
+	cv::Mat resizedImage;
+
+	for (int textureIndex = 0; textureIndex < nrTextures_; ++textureIndex)
+	{
+		// Current texture for corresponding material
+		cv::Mat texture = cv::Mat::zeros(textureResolution_, textureResolution_, CV_8UC3);
+
+		for (int cameraIndex = 0; cameraIndex < static_cast<int>(cameras_.size()); ++cameraIndex)
+		{
+			// Load image for current camera
+			image = cv::imread(cameras_[cameraIndex].texture_file, 1);
+
+			// Calculate the resize factor to texturize with textureWithSize_
+			double resizeFactor = textureWithSize_ / static_cast<double>(image.cols);
+
+			if (resizeFactor > 1.0f)
+			{
+				resizeFactor = 1.0f;
+			}
+
+			// Resize image to the resolution used to texture with
+			cv::resize(image, resizedImage, cv::Size(), resizeFactor, resizeFactor, CV_INTER_AREA);
+
+			// Loop through all patches
+			for (size_t patchIndex = 0; patchIndex < patches_.size(); ++patchIndex)
+			{
+				// If the patch has the current camera as optimal camera
+				if (patches_[patchIndex].materialIndex_ == textureIndex && patches_[patchIndex].optimalCameraIndex_ == cameraIndex)
+				{
+					// Pixel coordinates to extract image information from
+					int extractX = static_cast<int>(floor(patches_[patchIndex].minu_));// + padding_);
+					int extractY = static_cast<int>(floor(patches_[patchIndex].minv_));// + padding_);
+
+					// Pixel coordinates to insert the image information to
+					int insertX = static_cast<int>(floor(patches_[patchIndex].c_.c_));
+					int insertY = static_cast<int>(floor(patches_[patchIndex].c_.r_));
+
+					// The size of the image information to use
+					int width = static_cast<int>(floor(patches_[patchIndex].maxu_)) - extractX - 1;
+					int height = static_cast<int>(floor(patches_[patchIndex].maxv_)) - extractY - 1;
+
+					// Get image information and add to texture
+					cv::Mat src = resizedImage(cv::Rect(extractX, extractY, width, height));
+					cv::Mat dst = texture(cv::Rect(insertX, insertY, width, height));
+					src.copyTo(dst);
+				}
+			}
+		}
+		cv::imwrite(outputFolder_ + texture_mesh_->tex_materials[textureIndex].tex_file, texture);
+	}
+
+	// Create nonVisibleFaces texture and save to file
+	cv::Mat nonVisibleFacesTexture = cv::Mat::zeros(50, 50, CV_8UC3) + cv::Scalar(255, 255, 255);
+	cv::imwrite(outputFolder_ + texture_mesh_->tex_materials[nrTextures_].tex_file, nonVisibleFacesTexture);
+}
+
+
 void Texturing::get_triangle_centroid(const pcl::PointXY &p1, const pcl::PointXY &p2, const pcl::PointXY &p3, pcl::PointXY &circumcenter, double &radius)
 {
 	// compute centroid's coordinates (translate back to original coordinates)
@@ -492,6 +995,7 @@ void Texturing::color_mesh(pcl::PolygonMesh &mesh, pcl::PointCloud<pcl::PointXYZ
 	pcl::toPCLPointCloud2(cloud_color_mesh, mesh.cloud);
 	printf("finish color mesh!\n");
 }
+
 
 void Texturing::texture_mesh(pcl::PolygonMesh &mesh, pcl::TextureMeshPtr texture_mesh, cv::Mat &transform_matrix, cv::Mat &image)
 {

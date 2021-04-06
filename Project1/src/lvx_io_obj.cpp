@@ -118,12 +118,15 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			
 			Texturing texturing;
 			
-			std::cout << "load-mesh-finish\n";
 			texturing.load_mesh(mesh);
-			std::cout << "load-camera-finish\n";
+			std::cout << "load-mesh-finish\n";
 			texturing.load_camera();
-			std::cout << "match-finish\n";
+			std::cout << "load-camera-finish\n";
 			texturing.mesh_image_match();
+			std::cout << "match-finish\n";
+			texturing.calculate_patches();
+			std::cout << "calculate-patches-finish\n";
+			texturing.sortPatches();
 
 			//PcOperator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }

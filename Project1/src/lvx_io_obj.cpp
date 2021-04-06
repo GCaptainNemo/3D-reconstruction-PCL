@@ -9,6 +9,8 @@
 #include "../include/texturing.h"
 #include "../include/lvx_io_obj.h"
 
+#define _COLOR_
+
 LvxObj::LvxObj()
 {
 
@@ -25,7 +27,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	const std::string dir = "../output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 5);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -60,6 +62,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
 		pcl::RangeImage& range_image = *range_image_ptr;
 
+		// Show range image.
 		PcOperator::pc2range_image(range_image, lvx_obj.points_xyzrgb);
 		pcl::visualization::RangeImageVisualizer range_image_widget("RangeImage");
 		range_image_widget.showRangeImage(range_image);
@@ -102,6 +105,8 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		pcl::TextureMeshPtr texture_mesh_ptr = pcl::TextureMeshPtr(new pcl::TextureMesh);
 
 		// poisson reconstrucion
+		Texturing texturing;
+
 		if (strcmp(option, "poisson") == 0)
 		{
 			// poisson reconstrucion
@@ -111,28 +116,29 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			PcOperator::decimateMesh(0.2, mesh);
 			std::cout << "after decimate Mesh size = " << mesh->polygons.size() << std::endl;
 			std::cout << "after decimate cloud size = " << mesh->cloud.width * mesh->cloud.height << std::endl;
-
-
-			// project each point to get color(low resolution) 
-			//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
 			
-			Texturing texturing;
-			
-			texturing.load_mesh(mesh);
-			std::cout << "load-mesh-finish\n";
-			texturing.load_camera();
-			std::cout << "load-camera-finish\n";
-			texturing.mesh_image_match();
-			std::cout << "match-finish\n";
-			texturing.calculate_patches();
-			std::cout << "calculate-patches-finish\n";
-			texturing.sortPatches();
-			std::cout << "sort-patches-finish\n";
-			texturing.create_textures();
-			std::cout << "create textures-finish\n";
-			texturing.write_obj_file();
-			std::cout << "write obj file-finish\n";
+			#ifdef _COLOR_
+			{
 
+				// project each point to get color(low resolution) 
+				//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+				
+				texturing.load_mesh(mesh);
+				std::cout << "load-mesh-finish\n";
+				texturing.load_camera();
+				std::cout << "load-camera-finish\n";
+				texturing.mesh_image_match();
+				std::cout << "match-finish\n";
+				texturing.calculate_patches();
+				std::cout << "calculate-patches-finish\n";
+				texturing.sortPatches();
+				std::cout << "sort-patches-finish\n";
+				texturing.create_textures();
+				std::cout << "create textures-finish\n";
+				texturing.write_obj_file();
+				std::cout << "write obj file-finish\n";
+			}
+			#endif
 
 			//PcOperator::texture_mesh_(mesh, texture_mesh_ptr, lvx_obj.transform_matrix, lvx_obj.image);
 			if (save) { pcl::io::savePLYFileBinary("../../linshi/poisson_mesh_without_color.ply", *mesh); }
@@ -151,7 +157,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		{
 			// pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(lvx_obj.points_xyzrgb);
 			// viewer->addPointCloud(lvx_obj.points_xyzrgb, rgb, "sample cloud");
-			// viewer->addTextureMesh(*texture_mesh_ptr, "Texture mesh");
+			//viewer->addTextureMesh(*texturing.texture_mesh_, "Texture mesh");
 			viewer->addPolygonMesh(*mesh, "mesh");
 			pcl::visualization::PointCloudColorHandlerCustom<Point> handler(lvx_obj.points_xyz, 0, 255, 0);
 			viewer->addPointCloud<Point>(lvx_obj.points_xyz, handler, "cloud_cylinder");
@@ -342,7 +348,7 @@ void LvxObj::read_pcd_xyz(const char * filename, const bool &iscrop)
 	}
 	else
 	{
-		// 根据transform-matrix裁剪一部分
+		// Frustrum culling
 		int size = cloud->size();
 		std::cout << "cloud-size = " << size << std::endl;
 		int row_bound = this->image.rows;
@@ -409,7 +415,7 @@ void LvxObj::read_pcds_xyz(const std::string & dir, const bool &iscrop, const in
 	}
 	else
 	{
-		// 根据transform-matrix裁剪一部分
+		// Frustrum culling
 		int size = cloud->size();
 		std::cout << "cloud-size = " << size << std::endl;
 		int row_bound = this->image.rows;

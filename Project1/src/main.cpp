@@ -23,7 +23,7 @@ int main()
 	
 	//bool show = true;
 	//LvxObj::openPCDfile("./output/test.pcd", show);
-	bool save = false;
+	bool save = true;
 	bool preprocess = false;
 	dealwith_lvx(preprocess, "mc", save);
 	return 0;

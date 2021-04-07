@@ -29,7 +29,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	const std::string dir = "../output";
 	lvx_obj.set_calib();
 	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 6);
+	lvx_obj.read_pcds_xyz(dir, true, 200);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -105,35 +105,37 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		PcOperator::normal_oriented(viewport, lvx_obj.points_xyz, normals);
 		
 		// Concatenate normal to xyzrgb pointcloud
-		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
-		std::cout << "rgb_clouds_with_normals.size = " << rgbcloud_with_normals->size();
+		pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+		pcl::concatenateFields(*(lvx_obj.points_xyz), *normals, *cloud_with_normals);
+		std::cout << "clouds_with_normals.size = " << cloud_with_normals->size();
 		
 		// Accelerating data structure
-		pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
-		tree2->setInputCloud(rgbcloud_with_normals);
+		pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
+		tree2->setInputCloud(cloud_with_normals);
 
 		// Marching Cubes algorithm
 		pcl::PolygonMesh mesh;
-		pcl::MarchingCubesHoppe<pcl::PointXYZRGBNormal> mc;
+		pcl::MarchingCubesHoppe<pcl::PointNormal> * mc = new pcl::MarchingCubesHoppe<pcl::PointNormal>();;
 		
-		//ISO: must be between 0 and 1.0
-		std::cout << "ISO-SIZE\n";
-		mc.setIsoLevel(0.5);   
-		mc.setSearchMethod(tree2);
-		mc.setInputCloud(rgbcloud_with_normals);
+		// Set marching cubes parameters
+		mc->setIsoLevel(0.0f);
+		mc->setGridResolution(100, 100, 100);  //higher better
+		mc->setPercentageExtendGrid(0.0f);
 		
+		// Set search method
+		mc->setSearchMethod(tree2);
+		mc->setInputCloud(cloud_with_normals);
 		std::cout << "start reconstruction\n";
-		// Grid resolution: 1dm x 1dm x 1dm
-		//mc.setGridResolution(0.1, 0.1, 0.1);
 		
 		// reconstruct
-		mc.reconstruct(mesh);
+		mc->reconstruct(mesh);
 		std::cout << "Marching Cube reconstruction mesh size = " << mesh.polygons.size() << std::endl;
 		std::cout << "Marching Cube reconstruction cloud size = " << mesh.cloud.width * mesh.cloud.height << std::endl;
 
 		// pcl::MarchingCubes<pcl::PointXYZ> mc;
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("Marching Cubes"));
+		Texturing::color_mesh(mesh, lvx_obj.points_xyzrgb);
+		if (save) { pcl::io::savePLYFileBinary("../../linshi/mesh_mc.ply", mesh); }
 		viewer->addPolygonMesh(mesh, "mesh");
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
@@ -141,7 +143,9 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 			viewer->spinOnce(100);
 			boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 		}
-		std::cout << "success" << std::endl;		
+		std::cout << "success" << std::endl;	
+		if (save) { pcl::io::savePLYFileBinary("../../linshi/mesh_mc.ply", mesh); }
+
 	}
 	else 
 	{

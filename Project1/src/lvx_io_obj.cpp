@@ -95,28 +95,46 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	}
 	else if (strcmp(option, "mc") == 0)
 	{
-		std::cout << "in marching cube option\n";
-		pcl::PolygonMeshPtr mesh;
-		std::cout << "initialize mesh\n";
-
-		pcl::MarchingCubesHoppe<pcl::PointXYZ>::Ptr mc;
-		std::cout << "initialize mc\n";
+		// Estimate point cloud normal vector
+		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+		PcOperator::estimate_normal(lvx_obj.points_xyz, normals, 10);
 		
+		// Normal vector oriented according to the viewport
+		pcl::PointXYZ viewport = pcl::PointXYZ(0, 0, 0);
+		PcOperator::normal_oriented(viewport, lvx_obj.points_xyz, normals);
+		PcOperator::normal_oriented(viewport, lvx_obj.points_xyz, normals);
+		
+		// Concatenate normal to xyzrgb pointcloud
+		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr rgbcloud_with_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+		pcl::concatenateFields(*(lvx_obj.points_xyzrgb), *normals, *rgbcloud_with_normals);
+		std::cout << "rgb_clouds_with_normals.size = " << rgbcloud_with_normals->size();
+		
+		// Accelerating data structure
+		pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
+		tree2->setInputCloud(rgbcloud_with_normals);
+
+		// Marching Cubes algorithm
+		pcl::PolygonMesh mesh;
+		pcl::MarchingCubesHoppe<pcl::PointXYZRGBNormal> mc;
+		
+		//ISO: must be between 0 and 1.0
+		std::cout << "ISO-SIZE\n";
+		mc.setIsoLevel(0.5);   
+		mc.setSearchMethod(tree2);
+		mc.setInputCloud(rgbcloud_with_normals);
+		
+		std::cout << "start reconstruction\n";
 		// Grid resolution: 1dm x 1dm x 1dm
-		mc->setGridResolution(0.1, 0.1, 0.1);
-		std::cout << "initialize resolution\n";
-
-
-		mc->setInputCloud(lvx_obj.points_xyz);
-		std::cout << "initialize xyz\n";
-
+		//mc.setGridResolution(0.1, 0.1, 0.1);
 		
-		std::cout << "before marching cubes algorithm \n";
-		mc->reconstruct(*mesh.get());
-		std::cout << "Marching Cube reconstruction mesh size = " << mesh->polygons.size() << std::endl;
+		// reconstruct
+		mc.reconstruct(mesh);
+		std::cout << "Marching Cube reconstruction mesh size = " << mesh.polygons.size() << std::endl;
+		std::cout << "Marching Cube reconstruction cloud size = " << mesh.cloud.width * mesh.cloud.height << std::endl;
+
 		// pcl::MarchingCubes<pcl::PointXYZ> mc;
 		boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("Marching Cubes"));
-		viewer->addPolygonMesh(*mesh.get(), "mesh");
+		viewer->addPolygonMesh(mesh, "mesh");
 		viewer->initCameraParameters();
 		viewer->addCoordinateSystem();
 		while (!viewer->wasStopped()) {

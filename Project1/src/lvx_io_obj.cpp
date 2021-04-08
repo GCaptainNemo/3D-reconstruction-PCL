@@ -119,7 +119,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		
 		// Set marching cubes parameters
 		mc->setIsoLevel(0.0f);
-		mc->setGridResolution(100, 100, 100);  //higher better
+		mc->setGridResolution(1000, 1000, 1000);  //higher better
 		mc->setPercentageExtendGrid(0.0f);
 		
 		// Set search method

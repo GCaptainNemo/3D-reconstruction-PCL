@@ -121,7 +121,7 @@ public:
 	/*!
 	 * \brief load_camera             Loads camera with corresponding image.
 	 */
-	void load_camera();
+	void load_camera(std::string bundlePath);
 
 
 	/*!
@@ -157,7 +157,7 @@ public:
 	/*!
 	 * \brief write_obj_file      Writes the textured mesh to file on the OBJ format.
 	 */
-	void write_obj_file();
+	void write_obj_file(const char * name);
 
 	/*!
 	 * \brief color_mesh              Give each polygon's vertex color according to KNN PointXYZRGB

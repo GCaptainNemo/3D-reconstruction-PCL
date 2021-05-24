@@ -190,7 +190,8 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 				
 				texturing.load_mesh(mesh);
 				std::cout << "load-mesh-finish\n";
-				texturing.load_camera();
+				std::string bundle_out_path = "../calib_par/bundle.rd.out";
+				texturing.load_camera(bundle_out_path);
 				std::cout << "load-camera-finish\n";
 				texturing.mesh_image_match();
 				std::cout << "match-finish\n";
@@ -200,7 +201,8 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 				std::cout << "sort-patches-finish\n";
 				texturing.create_textures();
 				std::cout << "create textures-finish\n";
-				texturing.write_obj_file();
+				const char * name = "poisson.obj";
+				texturing.write_obj_file(name);
 				std::cout << "write obj file-finish\n";
 			}
 			#endif

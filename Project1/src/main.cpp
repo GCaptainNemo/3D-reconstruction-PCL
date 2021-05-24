@@ -34,35 +34,35 @@ int main()
 	
 
 	// ///////////////////////////////////////////////////////////////
-	bool color = true;
-	if (color)
-	{
+	//bool color = true;
+	//if (color)
+	//{
 
-		// project each point to get color(low resolution) 
-		//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
-		Texturing texturing;
-		pcl::PolygonMeshPtr mesh = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
-		
-		if (pcl::io::loadPLYFile("../../dataset/mesh_without_color.ply", *mesh) == -1) {
-			std::cout << "couldn't read file" << std::endl;
-			return 0;
-		};
-		texturing.load_mesh(mesh);
-		std::cout << "load-mesh-finish\n";
-		std::string bundlePath = "../../dataset/bundle.rd_xinyang.out";
-		texturing.load_camera(bundlePath);
-		std::cout << "load-camera-finish\n";
-		texturing.mesh_image_match();
-		std::cout << "match-finish\n";
-		texturing.calculate_patches();
-		std::cout << "calculate-patches-finish\n";
-		texturing.sort_patches();
-		std::cout << "sort-patches-finish\n";
-		texturing.create_textures();
-		std::cout << "create textures-finish\n";
-		const char * name = "texture_shapan.obj";
-		texturing.write_obj_file(name);
-		std::cout << "write obj file-finish\n";
-	}
+	//	// project each point to get color(low resolution) 
+	//	//Texturing::color_mesh(*mesh.get(), lvx_obj.points_xyzrgb);
+	//	Texturing texturing;
+	//	pcl::PolygonMeshPtr mesh = pcl::PolygonMeshPtr(new pcl::PolygonMesh);
+	//	
+	//	if (pcl::io::loadPLYFile("../../dataset/mesh_without_color.ply", *mesh) == -1) {
+	//		std::cout << "couldn't read file" << std::endl;
+	//		return 0;
+	//	};
+	//	texturing.load_mesh(mesh);
+	//	std::cout << "load-mesh-finish\n";
+	//	std::string bundlePath = "../../dataset/bundle.rd_xinyang.out";
+	//	texturing.load_camera(bundlePath);
+	//	std::cout << "load-camera-finish\n";
+	//	texturing.mesh_image_match();
+	//	std::cout << "match-finish\n";
+	//	texturing.calculate_patches();
+	//	std::cout << "calculate-patches-finish\n";
+	//	texturing.sort_patches();
+	//	std::cout << "sort-patches-finish\n";
+	//	texturing.create_textures();
+	//	std::cout << "create textures-finish\n";
+	//	const char * name = "texture_shapan.obj";
+	//	texturing.write_obj_file(name);
+	//	std::cout << "write obj file-finish\n";
+	//}
 }
 

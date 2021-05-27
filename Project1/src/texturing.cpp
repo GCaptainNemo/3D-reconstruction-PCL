@@ -35,10 +35,9 @@ void Texturing::load_mesh(pcl::PolygonMeshPtr mesh)
 	std::wcout << "there are " << mesh->polygons.size() << " polygons" << std::endl;
 };
 
-void Texturing::load_camera()
+void Texturing::load_camera(std::string bundlePath)
 {
 	std::ifstream bundleFile;
-	std::string bundlePath = "../calib_par/bundle.rd.out";
 	bundleFile.open(bundlePath.c_str(), std::ios_base::binary);
 	// Check if file is open
 	if (!bundleFile.is_open())
@@ -51,10 +50,14 @@ void Texturing::load_camera()
 	std::string dummyLine = "";
 	std::getline(bundleFile, dummyLine);
 
-	int nrCameras = 0;
-	bundleFile >> nrCameras;
+	int cameras_num = 0;
+	bundleFile >> cameras_num;
+	std::cout << "cameras_num = " << cameras_num << std::endl;
 	bundleFile >> dummyLine;
-	for (int i = 0; i < nrCameras; ++i)
+	//bool bundle_out = true;
+	bool bundle_out = false;
+
+	for (int i = 0; i < cameras_num; ++i)
 	{
 		double val;
 		pcl::TextureMapping<pcl::PointXYZ>::Camera cam;
@@ -88,21 +91,25 @@ void Texturing::load_camera()
 		transform(3, 2) = 0.0;
 		transform(3, 3) = 1.0;
 
-		// transform = transform.inverse();
+		if (bundle_out)
+		{
+			transform = transform.inverse();
+			// Column negation
+			transform(0, 2) = -1.0*transform(0, 2);
+			transform(1, 2) = -1.0*transform(1, 2);
+			transform(2, 2) = -1.0*transform(2, 2);
 
-		// Column negation
-		/*transform(0, 2) = -1.0*transform(0, 2);
-		transform(1, 2) = -1.0*transform(1, 2);
-		transform(2, 2) = -1.0*transform(2, 2);
-
-		transform(0, 1) = -1.0*transform(0, 1);
-		transform(1, 1) = -1.0*transform(1, 1);
-		transform(2, 1) = -1.0*transform(2, 1);
-*/
+			transform(0, 1) = -1.0*transform(0, 1);
+			transform(1, 1) = -1.0*transform(1, 1);
+			transform(2, 1) = -1.0*transform(2, 1);
+		}
 		// Set values from bundle to current camera
 		cam.pose = transform;
-		cam.texture_file = "../../resources/livox_hikvision/test.png";
-		
+		//cam.texture_file = "../../resources/livox_hikvision/test.png";
+
+		std::string img_dir = "../../dataset/" + std::to_string(i + 1) + ".jpg";
+		std::cout << "img-dir = " << img_dir << "\n";
+		cam.texture_file = img_dir;
 
 		// Read image to get full resolution size
 		cv::Mat image = cv::imread(cam.texture_file);
@@ -243,10 +250,13 @@ void Texturing::mesh_image_match()
 	std::cout << "there are " << cameras_.size() << " cameras" << std::endl;
 	for (size_t cameraIndex = 0; cameraIndex < cameras_.size(); ++cameraIndex)
 	{
+
 		// Move vertices in mesh into the camera coordinate system
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cameraCloud(new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::transformPointCloud(*meshCloud, *cameraCloud, cameras_[cameraIndex].pose.inverse());
-		
+		std::cout << "--------------------------------------------------\n";
+		std::cout << "transform to camera " << cameraIndex <<  " position\n";
+
 		// Cloud to contain points projected into current camera
 		pcl::PointCloud<pcl::PointXY>::Ptr projections(new pcl::PointCloud<pcl::PointXY>);
 
@@ -258,7 +268,7 @@ void Texturing::mesh_image_match()
 		std::vector<pcl::texture_mapping::UvIndex> indexUvToPoints;
 
 		// Count the number of vertices inside the camera frustum
-		int countInsideFrustum = 0;
+		int count_inside_frustum = 0;
 
 		// Frustum culling for all faces
 		std::cout << "start Frustrum culling\n";
@@ -293,7 +303,7 @@ void Texturing::mesh_image_match()
 				visibility[faceIndex] = true;
 
 				// Update count
-				++countInsideFrustum;
+				++count_inside_frustum;
 			}
 			else
 			{
@@ -309,115 +319,115 @@ void Texturing::mesh_image_match()
 				visibility[faceIndex] = false;
 			}
 		}
-		std::cout << "there are " << countInsideFrustum << " faces inside Frustrum\n";
+		std::cout << "there are " << count_inside_frustum << " faces inside Frustrum\n";
 
 		std::vector<double> local_tTIA_distances(texture_mesh_->tex_polygons[0].size(), DBL_MAX);
 		std::vector<double> local_tTIA_angles(texture_mesh_->tex_polygons[0].size(), DBL_MAX);
 		
 
 
-
+		// 
 		// If any faces are visible in the current camera, perform occlusion culling
-		//std::cout << "start occlusion culling\n";
-		//if (countInsideFrustum > 0)
-		//{
-		//	// Set up acceleration structure
-		//	pcl::KdTreeFLANN<pcl::PointXY> kdTree;
-		//	
-		//	// Input data is project to image coordinate points(UV). Arrange by facet
-		//	kdTree.setInputCloud(projections);
+		std::cout << "start occlusion culling\n";
+		if (count_inside_frustum > 0)
+		{
+			// Set up acceleration structure
+			pcl::KdTreeFLANN<pcl::PointXY> kdTree;
+			
+			// Input data is project to image coordinate points(UV). Arrange by facet
+			kdTree.setInputCloud(projections);
 
-		//	// Loop through all faces and perform occlusion culling for faces inside frustum
-		//	for (size_t faceIndex = 0; faceIndex < texture_mesh_->tex_polygons[0].size(); ++faceIndex)
-		//	{
-		//		if (visibility[faceIndex])
-		//		{
-		//			// Vectors to store output from radius_search_num in acceleration structure
-		//			std::vector<int> neighbors;  // The index of neighbours. 
-		//			std::vector<float> neighborsSquaredDistance;  // The face_distance of neighbours.
+			// Loop through all faces and perform occlusion culling for faces inside frustum
+			for (size_t faceIndex = 0; faceIndex < texture_mesh_->tex_polygons[0].size(); ++faceIndex)
+			{
+				if (visibility[faceIndex])
+				{
+					// Vectors to store output from radius_search_num in acceleration structure
+					std::vector<int> neighbors;  // The index of neighbours. 
+					std::vector<float> neighborsSquaredDistance;  // The face_distance of neighbours.
 
-		//			// Variables for the vertices in face as projections in the camera plane
-		//			pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
-		//			
-		//			if (Texturing::is_face_projected(cameras_[cameraIndex],
-		//				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
-		//				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
-		//				cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],
-		//				pixelPos0, pixelPos1, pixelPos2))
-		//			{
-		//				// Variables for a radius circumscribing the polygon in the camera plane and the center of the polygon
-		//				double radius; pcl::PointXY center;
+					// Variables for the vertices in face as projections in the camera plane
+					pcl::PointXY pixelPos0; pcl::PointXY pixelPos1; pcl::PointXY pixelPos2;
+					
+					if (Texturing::is_face_projected(cameras_[cameraIndex],
+						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]],
+						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]],
+						cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]],
+						pixelPos0, pixelPos1, pixelPos2))
+					{
+						// Variables for a radius circumscribing the polygon in the camera plane and the center of the polygon
+						double radius; pcl::PointXY center;
 
-		//				// Get values for radius and center of projected triangle.
-		//				Texturing::get_triangle_centroid(pixelPos0, pixelPos1, pixelPos2, center, radius);
+						// Get values for radius and center of projected triangle.
+						Texturing::get_triangle_centroid(pixelPos0, pixelPos1, pixelPos2, center, radius);
 
-		//				// Use kdtree to search for projected-points that less then radius from center.
-		//				int radius_search_num = kdTree.radiusSearch(center, radius, neighbors, neighborsSquaredDistance);
+						// Use kdtree to search for projected-points that less then radius from center.
+						int radius_search_num = kdTree.radiusSearch(center, radius, neighbors, neighborsSquaredDistance);
 
-		//				// Extract distances for all vertices for face to camera(for Camera the forward coordinate is z)
-		//				double d0 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]].z;
-		//				double d1 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]].z;
-		//				double d2 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]].z;
+						// Extract distances for all vertices for face to camera(for Camera the forward coordinate is z)
+						double d0 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]].z;
+						double d1 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]].z;
+						double d2 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]].z;
 
-		//				// Calculate largest face_distance and store in face_distance variable.
-		//				double face_distance = std::max(d0, std::max(d1, d2));
+						// Calculate largest face_distance and store in face_distance variable.
+						double face_distance = std::max(d0, std::max(d1, d2));
 
-		//				//Get points
-		//				pcl::PointXYZ p0 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]];
-		//				pcl::PointXYZ p1 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]];
-		//				pcl::PointXYZ p2 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]];
-		//				//Calculate face normal
+						//Get points
+						pcl::PointXYZ p0 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[0]];
+						pcl::PointXYZ p1 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[1]];
+						pcl::PointXYZ p2 = cameraCloud->points[texture_mesh_->tex_polygons[0][faceIndex].vertices[2]];
+						//Calculate face normal
 
-		//				pcl::PointXYZ diff0;
-		//				pcl::PointXYZ diff1;
-		//				diff0.x = p1.x - p0.x;
-		//				diff0.y = p1.y - p0.y;
-		//				diff0.z = p1.z - p0.z;
-		//				diff1.x = p2.x - p0.x;
-		//				diff1.y = p2.y - p0.y;
-		//				diff1.z = p2.z - p0.z;
+						pcl::PointXYZ diff0;
+						pcl::PointXYZ diff1;
+						diff0.x = p1.x - p0.x;
+						diff0.y = p1.y - p0.y;
+						diff0.z = p1.z - p0.z;
+						diff1.x = p2.x - p0.x;
+						diff1.y = p2.y - p0.y;
+						diff1.z = p2.z - p0.z;
 
-		//				// cross product(diff0 x diff1) to calculate the face's normal vector
-		//				pcl::PointXYZ normal;
-		//				normal.x = diff0.y * diff1.z - diff0.z * diff1.y;
-		//				normal.y = -(diff0.x * diff1.z - diff0.z * diff1.x);
-		//				normal.z = diff0.x * diff1.y - diff0.y * diff1.x;
-		//				double norm = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-		//				//Angle of face to camera£¨Camera coordinate system£©
-		//				double cos = normal.z / norm;
+						// cross product(diff0 x diff1) to calculate the face's normal vector
+						pcl::PointXYZ normal;
+						normal.x = diff0.y * diff1.z - diff0.z * diff1.y;
+						normal.y = -(diff0.x * diff1.z - diff0.z * diff1.x);
+						normal.z = diff0.x * diff1.y - diff0.y * diff1.x;
+						double norm = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+						//Angle of face to camera£¨Camera coordinate system£©
+						double cos = normal.z / norm;
 
-		//				//Save distance of faceIndex to current camera, maximize distances of three vertices
-		//				local_tTIA_distances[faceIndex] = face_distance;
+						//Save distance of faceIndex to current camera, maximize distances of three vertices
+						local_tTIA_distances[faceIndex] = face_distance;
 
-		//				//Save angle of faceIndex to current camera
-		//				//if (normal.z >= 0)
-		//				local_tTIA_angles[faceIndex] = sqrt(1.0 - cos * cos);
-		//				
-		//				// If other projections are found inside the radius
-		//				if (radius_search_num > 0)
-		//				{
+						//Save angle of faceIndex to current camera
+						//if (normal.z >= 0)
+						local_tTIA_angles[faceIndex] = sqrt(1.0 - cos * cos);
+						
+						// If other projections are found inside the radius
+						if (radius_search_num > 0)
+						{
 
-		//					// Compare face_distance to all neighbors inside radius
-		//					for (size_t i = 0; i < neighbors.size(); ++i)
-		//					{
-		//						// Distance variable from neighbor to camera
-		//						double neighborDistance = cameraCloud->points[indexUvToPoints[neighbors[i]].idx_cloud].z;
+							// Compare face_distance to all neighbors inside radius
+							for (size_t i = 0; i < neighbors.size(); ++i)
+							{
+								// Distance variable from neighbor to camera
+								double neighborDistance = cameraCloud->points[indexUvToPoints[neighbors[i]].idx_cloud].z;
 
-		//						// If the neighbor has a greater distance to the camera and is inside face polygon set it as not visible
-		//						if (face_distance < neighborDistance)
-		//						{
-		//							if (Texturing::check_point_in_triangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
-		//							{
-		//								// Update visibility for neighbors
-		//								visibility[indexUvToPoints[neighbors[i]].idx_face] = false;
-		//							}
-		//						}
-		//					}
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+								// If the neighbor has a greater distance to the camera and is inside face polygon set it as not visible
+								if (face_distance < neighborDistance)
+								{
+									if (Texturing::check_point_in_triangle(pixelPos0, pixelPos1, pixelPos2, projections->points[neighbors[i]]))
+									{
+										// Update visibility for neighbors
+										visibility[indexUvToPoints[neighbors[i]].idx_face] = false;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
 		// Number of polygons that add current camera as the optimal camera
 		int count = 0;
@@ -431,18 +441,16 @@ void Texturing::mesh_image_match()
 				/*std::cout << local_tTIA_distances[faceIndex] << "vs" << tTIA_distances[faceIndex] << std::endl;
 				std::cout << local_tTIA_angles[faceIndex] << "vs" << tTIA_angles[faceIndex] << std::endl;
 */
-				/*if (local_tTIA_distances[faceIndex] < tTIA_distances[faceIndex] && local_tTIA_angles[faceIndex] < tTIA_angles[faceIndex])
-				{*/
-				++count;
-				tTIA_angles[faceIndex] = local_tTIA_angles[faceIndex];
-				tTIA_distances[faceIndex] = local_tTIA_distances[faceIndex];
-				hasOptimalCamera[faceIndex] = true;
-				tTIA_[faceIndex] = cameraIndex;
-					
-				//}
+				if (local_tTIA_distances[faceIndex] < tTIA_distances[faceIndex] && local_tTIA_angles[faceIndex] < tTIA_angles[faceIndex])
+				{
+					++count;
+					tTIA_angles[faceIndex] = local_tTIA_angles[faceIndex];
+					tTIA_distances[faceIndex] = local_tTIA_distances[faceIndex];
+					hasOptimalCamera[faceIndex] = true;
+					tTIA_[faceIndex] = cameraIndex;	
+				}
 			}
 		}
-		std::cout << "---------------------------------------------------------------" << std::endl;
 		std::cout << "After occlusion culling count_visible = " << count_visible << std::endl;
 		std::cout << "count = " << count << std::endl;
 	}
@@ -949,9 +957,9 @@ void Texturing::create_textures()
 	cv::imwrite(outputFolder_ + texture_mesh_->tex_materials[nrTextures_].tex_file, nonVisibleFacesTexture);
 }
 
-void Texturing::write_obj_file()
+void Texturing::write_obj_file(const char * name)
 {
-	if (Texturing::saveOBJFile(outputFolder_ + "odm_textured_model.obj", *texture_mesh_.get(), 7) == 0)
+	if (Texturing::saveOBJFile(outputFolder_ + name, *texture_mesh_.get(), 7) == 0)
 	{
 		std::cout << "odm_textured_model.obj successfully saved.\n";
 	}

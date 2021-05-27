@@ -148,6 +148,43 @@ def asdict(obj):
             d[attr] = getattr(obj, attr)
     return d
 
+def get_imu(lvxfile, outdir):
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    lf = LvxFile(lvxfile)
+    data_type = DataType.IMU_INFO
+    # ACC_X: 加速度计X轴分量
+    # GYR_X：绕X轴旋转角速度
+    attributes = ['acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
+    acc_x_lst = []
+    acc_y_lst = []
+    acc_z_lst = []
+    gyro_x_lst = []
+    gyro_y_lst = []
+    gyro_z_lst = []
+    for frame_index, frame in enumerate(lf.point_data_block):
+        # timestamp = 0
+        points = []
+        for package in frame.packages:
+            package: Package
+            # if not timestamp:
+            timestamp = package.timestamp
+            for point in package.points:
+                if package.data_type == data_type:
+                    points.append(point)
+                    # print("frame = ", frame_index, "timestamp = ", timestamp, [str(getattr(point, attr)) for attr in attributes])
+                    acc_x_lst.append(float(getattr(point, 'acc_x')))
+                    acc_y_lst.append(float(getattr(point, 'acc_y')))
+                    acc_z_lst.append(float(getattr(point, 'acc_z')))
+                    gyro_x_lst.append(float(getattr(point, 'gyro_x')))
+                    gyro_y_lst.append(float(getattr(point, 'gyro_y')))
+                    gyro_z_lst.append(float(getattr(point, 'gyro_z')))
+    print(acc_x_lst)
+    print(acc_y_lst)
+    print(acc_z_lst)
+    print(gyro_x_lst)
+    print(gyro_y_lst)
+    print(gyro_z_lst)
 
 def topcds(lvxfile, outdir):
     if not os.path.exists(outdir):
@@ -223,3 +260,8 @@ def topcds(lvxfile, outdir):
             f.write(' '.join(values) + '\n')
         f.close()
         index += 1
+
+
+if __name__ == "__main__":
+    get_imu("short.lvx", "./output")
+

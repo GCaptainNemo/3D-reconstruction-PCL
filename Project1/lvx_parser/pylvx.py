@@ -1,6 +1,8 @@
 from _frame import FrameHeader, Frame, DataType, Point0, Point1, Point2, Point3, Point4, Point5, Point6, Package
 import os
 from datetime import datetime
+import numpy as np
+import pickle
 
 
 class PublicHeader:
@@ -148,6 +150,7 @@ def asdict(obj):
             d[attr] = getattr(obj, attr)
     return d
 
+
 def get_imu(lvxfile, outdir):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -168,7 +171,6 @@ def get_imu(lvxfile, outdir):
         for package in frame.packages:
             package: Package
             # if not timestamp:
-            timestamp = package.timestamp
             for point in package.points:
                 if package.data_type == data_type:
                     points.append(point)
@@ -179,12 +181,27 @@ def get_imu(lvxfile, outdir):
                     gyro_x_lst.append(float(getattr(point, 'gyro_x')))
                     gyro_y_lst.append(float(getattr(point, 'gyro_y')))
                     gyro_z_lst.append(float(getattr(point, 'gyro_z')))
-    print(acc_x_lst)
-    print(acc_y_lst)
-    print(acc_z_lst)
-    print(gyro_x_lst)
-    print(gyro_y_lst)
-    print(gyro_z_lst)
+    address_acc_x = outdir + "/acc_x.pkl"
+    address_acc_y = outdir + "/acc_y.pkl"
+    address_acc_z = outdir + "/acc_z.pkl"
+    address_gyro_x = outdir + "/gyro_x.pkl"
+    address_gyro_y = outdir + "/gyro_y.pkl"
+    address_gyro_z = outdir + "/gyro_z.pkl"
+
+    with open(address_acc_x, "wb") as f:
+        pickle.dump(np.array(acc_x_lst), f)
+    with open(address_acc_y, "wb") as f:
+        pickle.dump(np.array(acc_y_lst), f)
+    with open(address_acc_z, "wb") as f:
+        pickle.dump(np.array(acc_z_lst), f)
+    with open(address_gyro_x, "wb") as f:
+        pickle.dump(np.array(gyro_x_lst), f)
+    with open(address_gyro_y, "wb") as f:
+        pickle.dump(np.array(gyro_y_lst), f)
+    with open(address_gyro_z, "wb") as f:
+        pickle.dump(np.array(gyro_z_lst), f)
+
+
 
 def topcds(lvxfile, outdir):
     if not os.path.exists(outdir):
@@ -263,5 +280,5 @@ def topcds(lvxfile, outdir):
 
 
 if __name__ == "__main__":
-    get_imu("short.lvx", "./output")
+    get_imu("long.lvx", "./output")
 

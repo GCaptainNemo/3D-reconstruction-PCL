@@ -6,16 +6,36 @@ ext_ = [ 1.5993911940460570e-02, -7.1372456774609350e-03, 9.9984661548908593e-01
 R = ext_(1:3, 1:3);
 t = ext_(1:3, 4);
 ext = [R', -R' * t];
-  
-%%
 int = [ 1.6634617699999999e+03, 0., 9.7235897999999997e+02;
         0., 1.6652231500000000e+03, 5.1716867000000002e+02;
         0., 0., 1. ];
- 
-%%
-transform = int*ext;
+    transform = int*ext;
+
 test_vector = [100, 0, 0, 1]';
 photo_coordinate = transform * test_vector;
 output_x = photo_coordinate(1)/ photo_coordinate(3);
 output_y = photo_coordinate(2)/ photo_coordinate(3);
 
+%% calibration get R
+
+R_2 = [-0.09616367371422224, -0.9952577652719319, 0.01464679226672361;
+ -0.005828382997593362, -0.01415170873103655, -0.9998828726864087;
+ 0.9953484705415575, -0.09623777743647166, -0.004439863136423639];
+t_2 = [263.8656879319354;
+ 41.56580222030906;
+ -232.2035817651227];
+ext_2 = [R_2, t_2];
+K_2 = [1915.49, 1.311865401806629, 977.23; 
+		0., 1925.84, 538.86;
+		0.,  0.,  1.];
+transform_2 = K_2 * ext_2;
+test_vector = [100, 0, 0, 1]'; % ÔÚLidarÇ°100mm£¬ 0.1m
+
+test_vec = [3040, 108, 401, 1;
+    2878, 119, -23, 1;
+    2907, -286, -11, 1;
+    3064, -292, 398, 1]';
+
+photo_coordinate_2 = transform_2 * test_vector;
+output_x_2 = photo_coordinate_2(1, :)./ photo_coordinate_2(3, :);
+output_y_2 = photo_coordinate_2(2, :)./ photo_coordinate_2(3, :);

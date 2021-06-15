@@ -175,12 +175,15 @@ def get_imu(lvxfile, outdir):
                 if package.data_type == data_type:
                     points.append(point)
                     # print("frame = ", frame_index, "timestamp = ", timestamp, [str(getattr(point, attr)) for attr in attributes])
-                    acc_x_lst.append(float(getattr(point, 'acc_x')))
-                    acc_y_lst.append(float(getattr(point, 'acc_y')))
-                    acc_z_lst.append(float(getattr(point, 'acc_z')))
-                    gyro_x_lst.append(float(getattr(point, 'gyro_x')))
-                    gyro_y_lst.append(float(getattr(point, 'gyro_y')))
-                    gyro_z_lst.append(float(getattr(point, 'gyro_z')))
+                    # print(getattr(point, 'acc_x'))
+                    # print(type(getattr(point, 'acc_x')))
+                    gyro_x_lst.append(point.gyro_x)
+                    gyro_y_lst.append(point.gyro_y)
+                    gyro_z_lst.append(point.gyro_z)
+                    acc_x_lst.append(point.acc_x)
+                    acc_y_lst.append(point.acc_y)
+                    acc_z_lst.append(point.acc_z)
+
     address_acc_x = outdir + "/acc_x.pkl"
     address_acc_y = outdir + "/acc_y.pkl"
     address_acc_z = outdir + "/acc_z.pkl"
@@ -200,7 +203,6 @@ def get_imu(lvxfile, outdir):
         pickle.dump(np.array(gyro_y_lst), f)
     with open(address_gyro_z, "wb") as f:
         pickle.dump(np.array(gyro_z_lst), f)
-
 
 
 def topcds(lvxfile, outdir):

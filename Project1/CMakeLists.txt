@@ -10,27 +10,22 @@ find_package(PCL REQUIRED)
 find_package(PythonLibs REQUIRED)
 
 
-MESSAGE(STATUS "Project: SERVER") #打印相关消息消息
-
-
 include_directories(
-${PROJECT_SOURCE_DIR}/include
 ${PCL_INCLUDE_DIRS}
 ${OpenCV_INCLUDE_DIRS}
 ${PYTHON_INCLUDE_DIRS}
 )
 
-set(SRC 
-${PROJECT_SOURCE_DIR} src/kitti_io_obj.cpp
-${PROJECT_SOURCE_DIR} src/lvx_io_obj.cpp 
-${PROJECT_SOURCE_DIR} src/main.cpp
-${PROJECT_SOURCE_DIR} src/pc_operator.cpp 
-${PROJECT_SOURCE_DIR} src/utils.cpp
-${PROJECT_SOURCE_DIR} src/texturing.cpp
+file(GLOB_RECURSE DIR_SRCS    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE DIR_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
 
+
+add_executable(
+${PROJECT_NAME} 
+${DIR_SRCS}
+${DIR_HEADERS}
 )
 
-add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} 
 ${OpenCV_LIBRARIES}
 ${PCL_LIBRARIES}

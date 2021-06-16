@@ -14,6 +14,7 @@
 #include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/io/png_io.h>
 #include <pcl/surface/vtk_smoothing/vtk_mesh_quadric_decimation.h>
+#include <pcl/visualization/common/float_image_utils.h> //save rangeimage
 
 #define PI 3.1415926535
 
@@ -325,9 +326,9 @@ void PcOperator::pc2range_image(pcl::RangeImage& range_image, pcl::PointCloud<pc
 	
 
 	//// save
-	//float *ranges = range_image.getRangesArray();
-	//unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
-	//pcl::io::saveRgbPNGFile("../result/rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
+	float *ranges = range_image.getRangesArray();
+	unsigned char *rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height);
+	pcl::io::saveRgbPNGFile("rangeRGBImage.png", rgb_image, range_image.width, range_image.height);
 
 };
 

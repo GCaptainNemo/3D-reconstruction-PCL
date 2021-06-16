@@ -42,6 +42,16 @@ public:
 	brief project_get_rgb     Project pointcloud to image to get color.
 	*/
 	void project_get_rgb();
+	
+	/*
+	brief pc3dtopc2d_xyz     Project 3d pointcloud to image to 2d poingcloud.
+	*/
+	void pc3dtopc2d_xyz();
+
+	/*
+	brief knn_search        search k-nearest neighbour.
+	*/
+	void knn_search(const int &k);
 
 	/*
 	brief lvx2pcd             Convert lvx file to pcd file according to frame.

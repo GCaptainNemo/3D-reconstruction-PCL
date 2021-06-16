@@ -27,10 +27,10 @@ int main()
 	
 	// //////////////////////////////////////////////////////////////
 
-	/*bool save = true;
+	bool save = true;
 	bool preprocess = false;
-	dealwith_lvx(preprocess, "mc", save);
-	return 0;*/
+	dealwith_lvx(preprocess, "pc", save);
+	return 0;
 	
 
 	// ///////////////////////////////////////////////////////////////

@@ -2,6 +2,7 @@
 #include <pcl/visualization/range_image_visualizer.h>
 #include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/surface/marching_cubes.h>
+#include <pcl/kdtree/kdtree_flann.h>  //kd树搜索所需头文件
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <Python.h>
@@ -26,10 +27,12 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 {
 	// load photo as well as .pcd files.
 	LvxObj lvx_obj;
-	const std::string dir = "../output";
+	const std::string dir = "../output1";
 	lvx_obj.set_calib();
-	lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
-	lvx_obj.read_pcds_xyz(dir, true, 200);
+	//lvx_obj.read_image("../../resources/livox_hikvision/test.png", true);
+	lvx_obj.read_image("../../resources/livox_hikvision/2_1.bmp", true);
+
+	lvx_obj.read_pcds_xyz(dir, true, 90);
 	// lvx_obj.read_pcd_xyz("./output/test.pcd", true);
 	std::cout << "before filter size = " << lvx_obj.points_xyz->size() << std::endl;
 
@@ -45,7 +48,9 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 	}
 
 	// get colored point cloud(use point-image mapping)
-	lvx_obj.project_get_rgb();
+	//lvx_obj.project_get_rgb();
+	lvx_obj.pc3dtopc2d_xyz();
+	lvx_obj.knn_search(3);
 	if (strcmp(option, "pc") == 0)
 	{
 
@@ -55,7 +60,7 @@ void dealwith_lvx(const bool &preprocess, const char * option, const bool & save
 		while (!viewer.wasStopped())
 		{
 		}
-		if (save) { pcl::io::savePCDFile("../../linshi/color_pc.pcd", *lvx_obj.points_xyzrgb); }
+		if (save) { pcl::io::savePCDFile("../../linshi/color_pc_2d.pcd", *lvx_obj.points_xyzrgb); }
 	}
 	else if (strcmp(option, "rangeImage") == 0)
 	{
@@ -398,6 +403,89 @@ void LvxObj::project_get_rgb()
 	}
 	pcl::copyPointCloud(*linshi_xyz, *(this->points_xyz));
 	std::cout << "after_projected_get_rgb = " << this->points_xyz->size();
+};
+
+void LvxObj::pc3dtopc2d_xyz() 
+{
+	int size = this->points_xyz->size();
+	std::cout << "need to be projected size = " << size << std::endl;
+	int row_bound = this->image.rows;
+	int column_bound = this->image.cols;
+	this->points_xyzrgb->clear();
+	pcl::PointCloud<pcl::PointXYZ>::Ptr linshi_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+	linshi_xyz->clear();
+	for (int i = 0; i < size; i++)
+	{
+		// project get the photo coordinate
+		pcl::PointXYZRGB pointRGB;
+		pcl::PointXYZ point = this->points_xyz->points[i];
+		
+		double a_[4] = { point.x, point.y, point.z, 1.0 };
+		cv::Mat pos(4, 1, CV_64F, a_);
+		cv::Mat newpos(this->transform_matrix * pos);
+		float x = (float)(newpos.at<double>(0, 0) / newpos.at<double>(2, 0));
+		float y = (float)(newpos.at<double>(1, 0) / newpos.at<double>(2, 0));
+
+		// Trims viewport according to image size
+		if (point.x >= 0)
+		{
+			if (x >= 0 && x < column_bound && y >= 0 && y < row_bound)
+			{
+				//  imread BGR（BITMAP）
+				int row = int(y);
+				int column = int(x);
+				pointRGB.x = x;
+				pointRGB.y = y;
+				pointRGB.z = 0;
+				pointRGB.r = this->image.at<cv::Vec3b>(row, column)[2];
+				pointRGB.g = this->image.at<cv::Vec3b>(row, column)[1];
+				pointRGB.b = this->image.at<cv::Vec3b>(row, column)[0];
+				this->points_xyzrgb->push_back(pointRGB);
+				linshi_xyz->push_back(point);
+			}
+		}
+	}
+	pcl::copyPointCloud(*linshi_xyz, *(this->points_xyz));
+	std::cout << "after_pc3dtopc2d_xyz = " << this->points_xyz->size();
+}
+
+void LvxObj::knn_search(const int &K) 
+{
+
+	std::vector<int> pointIdxNKNSearch(K);  //存储查询点近邻索引
+	std::vector<float> pointNKNSquaredDistance(K);  //存储近邻点对应平方距离
+	pcl::KdTreeFLANN<pcl::PointXYZRGB>kdtree;	//创建kdtree对象
+	kdtree.setInputCloud(this->points_xyzrgb);			//设置搜索空间
+	
+	// 目标点
+	std::vector <cv::Point2f> vec_2d;
+	cv::Mat mat_2d;
+	vec_2d.clear();
+	vec_2d.push_back(cv::Point2f(921, 293));
+	vec_2d.push_back(cv::Point2f(1130, 293));
+	vec_2d.push_back(cv::Point2f(910, 558));
+	vec_2d.push_back(cv::Point2f(1139, 570));
+
+	for (int i = 0; i < 4; i++) {
+		pcl::PointXYZRGB searchPoint;				//定义查询点,并将重心设置为查询点
+		searchPoint.x = vec_2d[i].x;
+		searchPoint.y = vec_2d[i].y;
+		searchPoint.z = 0;
+		if (kdtree.nearestKSearch(searchPoint, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+		{
+			float x = 0; float y = 0; float z = 0;
+			for (size_t i = 0; i < pointIdxNKNSearch.size(); ++i) {
+				x += this->points_xyz->points[pointIdxNKNSearch[i]].x;
+				y += this->points_xyz->points[pointIdxNKNSearch[i]].y;
+				z += this->points_xyz->points[pointIdxNKNSearch[i]].z;
+				std::cout << "    " << this->points_xyz->points[pointIdxNKNSearch[i]].x
+					<< " " << this->points_xyz->points[pointIdxNKNSearch[i]].y
+					<< " " << this->points_xyz->points[pointIdxNKNSearch[i]].z
+					<< " (squared distance: " << pointNKNSquaredDistance[i] << ")" << std::endl;
+			}
+			std::cout << "average coordinate = " << x / 3. << ", " << y / 3. << ", " << z / 3. << std::endl;
+		}
+	}
 };
 
 
